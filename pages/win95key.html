@@ -1,17 +1,179 @@
-<!DOCTYPE HTML>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Windows 95 Keys - RVL-Veemon</title>
-  </head>
-  <body>
-    <h1>Windows 95のプロダクトキー</h1>
-    <p>Windows 95のプロダクトキーは法則が決まっているため、それをもとに特定することができます。</p>
-    <h2>リテール版</h2>
-    <p>法則は以下のとおりです。</p><br>
-    <p>最初の3つの数字は、222・333・444・555・666・777・888・999以外はOK、ハイフンは何を入れてもOK、以降の7文字は7で割り切れる数字である必要がある。</p>
-    <h3>キー一覧</h3>
-    <p>000-0000000</br>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows 95のキー | Maxicosm</title>
+    <style>
+        /* --- CSS: 基本設定と変数 --- */
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #333333;
+            --accent-color: #00C0FF;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* ダークモード用の配色 */
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --accent-color: #0074C1;
+            --card-bg: #1e1e1e;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* --- ヘッダー・テーマ切り替え --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        #theme-toggle {
+            background: none;
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        #theme-toggle:hover {
+            background-color: var(--accent-color);
+            color: #fff;
+        }
+
+        /* --- プロフィールセクション --- */
+        .profile-section {
+            text-align: center;
+            padding: 50px 0;
+        }
+
+        .avatar {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+            font-weight: bold;
+            object-fit: cover;
+        }
+
+        .job-title {
+            color: var(--accent-color);
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        /* --- コンテンツカード --- */
+        .section-title {
+            margin: 40px 0 20px;
+            font-size: 1.5rem;
+            position: relative;
+            padding-left: 10px;
+        }
+
+        .section-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 15%;
+            height: 70%;
+            width: 4px;
+            background-color: var(--accent-color);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        .skills-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            list-style: none;
+        }
+
+        .skills-list li {
+            background-color: rgba(74, 144, 226, 0.1);
+            color: var(--accent-color);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        /* --- フッター --- */
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <a href="index.html"><h1>Maxicosm</h1></a>
+            <button id="theme-toggle">Mode</button>
+        </header>
+
+        <section>
+            <h3 class="section-title">Windows 95のキー</h3>
+            <div class="card">
+                <p>Windows 95のキーは法則が決まっているため、それをもとに特定することができます。</p>
+            </div>
+        </section>
+
+        <section>
+            <h3 class="section-title">法則 (リテール版)</h3>
+            <div class="card">
+              <p>最初の3つの数字は222・333・444・555・666・777・888・999以外はOK</p>
+              <p>ハイフンは何を入れてもOK、以降の7文字は7で割り切れる数字である必要がある。</p>
+            </div>
+        </section>
+
+        <section>
+            <h3 class="section-title">キー一覧 (リテール版)</h3>
+            <div class="card">
+              <p>
+000-0000000</br>
 049-6301576</br>
 100-1208613</br>
 111-1111111</br>
@@ -21,7 +183,46 @@
 757-2573155</br>
 875-7215850</br>
 921-9829815</br>
-950-8532944
-    </p>
-  </body>
+950-8532944</br>
+              </p>
+            </div>
+        </section>
+
+        <section>
+            <h3 class="section-title">キー一覧 (OEM版)</h3>
+            <div class="card">
+              <p>
+COMING SOON!
+              </p>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2026 RDN Media. All Rights Reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        
+        // 読み込み時にブラウザ（ローカルストレージ）の設定を確認
+        const currentTheme = localStorage.getItem('theme');
+        if (currentTheme) {
+            document.documentElement.setAttribute('data-theme', currentTheme);
+        }
+
+        // ボタンがクリックされたときの処理
+        themeToggleBtn.addEventListener('click', () => {
+            let theme = document.documentElement.getAttribute('data-theme');
+            
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+    </script>
+</body>
 </html>
