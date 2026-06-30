@@ -1,21 +1,232 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Maxicosm</title>
-  </head>
-  <body>
-    <h1>Hello, World!</h1>
-    <p>こんにちは、Maxicosmの公式サイトへようこそ。</p>
-    <p>このサイトは未完成です。しばらくお待ちください。</p>
-    <h2>自己紹介 (簡単に)</h2>
-    <p>Maxicosm</p>
-    <p>生年月日: 2008年7月9日</p>
-    <p>年齢: 17歳</p>
-    <p>性別: 男性</p>
-    <h2>作ってるやつとか</h2>
-    Coming soon...
-    <h2>公式SNS等</h2>
-    <a href="https://lit.link/en/Maxicosm"><p>こちらにて確認できます。</p></a>
-  </body>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maxicosm</title>
+<style>
+  :root{
+    --bg: #11140f;
+    --panel: #181c14;
+    --ink: #eef0e6;
+    --ink-dim: #9aa394;
+    --accent: #c7f464;
+    --line: #2a2f23;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
+    line-height:1.7;
+  }
+
+  .display{
+    font-family: Georgia, "Hiragino Mincho ProN", serif;
+  }
+
+  header{
+    min-height: 90vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding: 8vw 6vw 4vw;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .eyebrow{
+    color: var(--accent);
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+    margin-bottom: 1.5rem;
+  }
+
+  h1{
+    font-size: clamp(2.5rem, 8vw, 5.5rem);
+    font-weight: 400;
+    line-height: 1.1;
+    max-width: 14ch;
+  }
+
+  h1 .accent{ color: var(--accent); font-style: italic; }
+
+  .lead{
+    margin-top: 2rem;
+    color: var(--ink-dim);
+    font-size: 1.1rem;
+    max-width: 42ch;
+  }
+
+  section{
+    padding: 5rem 6vw;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .section-title{
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+    color: var(--ink-dim);
+    margin-bottom: 2.5rem;
+  }
+
+  .about-grid{
+    display:grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 3rem;
+    align-items:start;
+  }
+
+  .about-grid p{ max-width: 56ch; color: var(--ink-dim); }
+  .about-grid p + p{ margin-top:1.2rem; }
+
+  .facts{ display:flex; flex-direction:column; gap:1.2rem; }
+  .fact dt{ font-size:0.8rem; color: var(--ink-dim); letter-spacing:0.05em; }
+  .fact dd{ font-size:1.05rem; margin-top:0.2rem; }
+
+  .skills{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+
+  .skill{
+    background: var(--panel);
+    padding: 1.6rem;
+    transition: background 0.25s ease;
+  }
+
+  .skill:hover{ background:#1f2418; }
+
+  .skill h3{ font-weight:500; font-size:1.05rem; margin-bottom:0.5rem; }
+  .skill p{ color: var(--ink-dim); font-size:0.9rem; }
+  .bar{ height:3px; background:var(--line); margin-top:1rem; overflow:hidden; }
+  .bar span{
+    display:block; height:100%; background:var(--accent);
+    width:0%; transition: width 1.1s ease;
+  }
+
+  .contact{
+    text-align:center;
+    border-bottom:none;
+  }
+
+  .contact h2{
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    font-weight:400;
+    max-width: 18ch;
+    margin: 0 auto 2rem;
+  }
+
+  .btn{
+    display:inline-block;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 0.9rem 2.2rem;
+    text-decoration:none;
+    font-size:0.95rem;
+    letter-spacing:0.05em;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .btn:hover{ background: var(--accent); color: var(--bg); }
+
+  footer{
+    padding: 2rem 6vw;
+    color: var(--ink-dim);
+    font-size: 0.8rem;
+    display:flex;
+    justify-content:space-between;
+  }
+
+  @media (max-width: 700px){
+    .about-grid{ grid-template-columns: 1fr; }
+    footer{ flex-direction:column; gap:0.5rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    * { transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Welcome to</div>
+  <h1 class="display">Maxicosm<br><span class="accent">Official Site!</span></h1>
+  <p class="lead">ここはMaxicosmの公式サイトです。</p>
+</header>
+
+<section id="about">
+  <div class="section-title">ABOUT</div>
+  <div class="about-grid">
+    <div>
+      <p>こんにちは、Maxicosmです。</p>
+      <p>普段、色んな趣味の投稿をSNSでしたりしてます。よろしくお願いします。</p>
+    </div>
+    <dl class="facts">
+      <div class="fact"><dt>生年月日</dt><dd>2008年7月9日</dd></div>
+      <div class="fact"><dt>年齢</dt><dd>17歳</dd></div>
+      <div class="fact"><dt>居住地</dt><dd>岐阜県</dd></div>
+      <div class="fact"><dt>職業</dt><dd>学生</dd></div>
+      <div class="fact"><dt>趣味</dt><dd>パソコン等</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section id="skills">
+  <div class="section-title">COMING SOON</div>
+  <div class="skills">
+    <div class="skill">
+      <h3>この項目はプレースホルダーです</h3>
+      <p>この項目はプレースホルダーです</p>
+      <div class="bar"><span data-level="90"></span></div>
+    </div>
+    <div class="skill">
+      <h3>この項目はプレースホルダーです</h3>
+      <p>この項目はプレースホルダーです</p>
+      <div class="bar"><span data-level="75"></span></div>
+    </div>
+    <div class="skill">
+      <h3>この項目はプレースホルダーです</h3>
+      <p>この項目はプレースホルダーです</p>
+      <div class="bar"><span data-level="60"></span></div>
+    </div>
+  </div>
+</section>
+
+<section class="contact" id="contact">
+  <h2 class="display">CONTACT</h2>
+  <p>何か連絡したいことなどがありましたら、Eメールなどでどうぞ（企業案件などは受け付けていません）</p>
+  <a class="btn" href="mailto:kurikyo0709@gmail.com">メールを送る</a>
+  <a class="btn" href="https://lit.link/Maxicosm">公式SNS一覧はこちらから</a>
+</section>
+
+<footer>
+  <span>Maxicosm</span>
+  <span>&copy; <span id="year"></span> RDN Media</span>
+</footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // スキルバーをスクロールで表示したら伸ばす
+  const bars = document.querySelectorAll('.bar span');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const el = entry.target;
+        el.style.width = el.dataset.level + '%';
+        observer.unobserve(el);
+      }
+    });
+  }, { threshold: 0.4 });
+
+  bars.forEach(bar => observer.observe(bar));
+</script>
+
+</body>
 </html>
