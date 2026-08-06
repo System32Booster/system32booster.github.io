@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ | Maxicosm</title>
+    <style>
+        /* --- CSS: 基本設定と変数 --- */
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #333333;
+            --accent-color: #00C0FF;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* ダークモード用の配色 */
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --accent-color: #0074C1;
+            --card-bg: #1e1e1e;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* --- ヘッダー・テーマ切り替え --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        #theme-toggle {
+            background: none;
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        #theme-toggle:hover {
+            background-color: var(--accent-color);
+            color: #fff;
+        }
+
+        /* --- プロフィールセクション --- */
+        .profile-section {
+            text-align: center;
+            padding: 50px 0;
+        }
+
+        .avatar {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+            font-weight: bold;
+            object-fit: cover;
+        }
+
+        .job-title {
+            color: var(--accent-color);
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        /* --- コンテンツカード --- */
+        .section-title {
+            margin: 40px 0 20px;
+            font-size: 1.5rem;
+            position: relative;
+            padding-left: 10px;
+        }
+
+        .section-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 15%;
+            height: 70%;
+            width: 4px;
+            background-color: var(--accent-color);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        .skills-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            list-style: none;
+        }
+
+        .skills-list li {
+            background-color: rgba(74, 144, 226, 0.1);
+            color: var(--accent-color);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        /* --- フッター --- */
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <a href="../index.html"><h1>Maxicosm</h1></a>
+            <button id="theme-toggle">Mode</button>
+        </header>
+
+        <section>
+            <h3 class="section-title">YouTubeの活動はどうしてますか？</h3>
+            <div class="card">
+                <p>YouTubeは現在活動を休止しています。気が向いたら活動を再開するのでそれまではお待ちください。</p>
+            </div>
+        </section>
+
+        <section>
+            <h3 class="section-title">RDNとはなんですか？</h3>
+            <div class="card">
+                <p>RDNは、Maxicosmの親ブランドです。私が他の名義などを使う際にも用いるものとなっています。</p>
+            </div>
+        </section>
+
+        <section>
+            <h3 class="section-title">Discordはありますか？</h3>
+            <div class="card">
+                <p>はい、あります。ただしスパム対策などのためフレンド申請に制限を設けています。</p>
+            </div>
+        </section>
+
+        <section>
+            <h3 class="section-title">Discordサーバーはありますか？</h3>
+            <div class="card">
+                <p>かつては公開していましたが、現在はサービスを終了し非推奨となっています。今後もDiscordサーバーの活動は行わない方針です。</p>
+            </div>
+        </section>
+
+        <section>
+            <h3 class="section-title">なりすましと思われるものを見かけましたがどうしたら良いですか？</h3>
+            <div class="card">
+                <p>なりすましについて疑わしいものはメール等でご連絡ください。私のメールアドレスはkurikyo0709@gmail.comです。</p>
+            </div>
+        </section>
+
+        <section>
+            <h3 class="section-title">本名はなんですか？</h3>
+            <div class="card">
+                <p>非公開です。ただし、現時点で非公表にしますが一部のSNSでは本名で活動しています。</p>
+            </div>
+        </section>
+
+        <section>
+            <h3 class="section-title">どこに住んでますか？</h3>
+            <div class="card">
+                <p>岐阜県のどこかです。</p>
+            </div>
+        </section>
+
+        <section>
+            <h3 class="section-title">顔出し・声出しはしますか？</h3>
+            <div class="card">
+                <p>いいえ、現時点では行いません。ただし声出しは一部のフレンドに限定して行っています。</p>
+            </div>
+        </section>
+
+        <section>
+            <h3 class="section-title">あなたの個人情報と思われるものを見つけました</h3>
+            <div class="card">
+                <p>私は多くの個人情報を秘匿してるので、それは偽物の可能性もあります。ただし、わからない場合など心配である場合はご連絡ください。</p>
+            </div>
+        </section>
+
+        <section>
+            <h3 class="section-title">あなたの作った作品・ロゴなどを使うことはできますか？</h3>
+            <div class="card">
+                <p>宣伝活動など私にとって良い効果があるとする場合OKとします。ただし、以下のような使い方は禁止します。</p>
+              <p>・なりすましなどを行うために使う</p>
+              <p>・誹謗中傷や侮辱などの目的での使用</p>
+              <p>・犯罪行為などでの使用</p>
+              <p>・私に関するデマなどでの使用</p>
+              <p>・その他私が不快に思うものや私に対し不都合な影響があると考えられる使い方</p>
+            </div>
+        </section>
+
+        <section>
+            <h3 class="section-title">NSFWを扱うことはありますか？</h3>
+            <div class="card">
+                <p>はい、現在何も投稿してませんがX(旧Twitter)にはNSFW用のアカウントがあります。</p>
+              <p>他にもNSFWサイト上に公式アカウントをサイトを見る目的として用意してます、ただしそれらのアカウントについては現時点ではお答えできません。</p>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2026 RDN Media. All Rights Reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        
+        // 読み込み時にブラウザ（ローカルストレージ）の設定を確認
+        const currentTheme = localStorage.getItem('theme');
+        if (currentTheme) {
+            document.documentElement.setAttribute('data-theme', currentTheme);
+        }
+
+        // ボタンがクリックされたときの処理
+        themeToggleBtn.addEventListener('click', () => {
+            let theme = document.documentElement.getAttribute('data-theme');
+            
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+    </script>
+</body>
+</html>
