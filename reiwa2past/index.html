@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>令和 → 元号変換</title>
+  <style>
+    :root {
+      --bg: #f5f6fa;
+      --surface: #ffffff;
+      --ink: #1c2233;
+      --muted: #6b7288;
+      --line: #e3e6ef;
+      --accent: #2f4bd8;
+      --accent-ink: #ffffff;
+      --real-bg: #e8f5ee;
+      --real-ink: #1d6b45;
+      --error: #c0392b;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #12151f;
+        --surface: #1b2030;
+        --ink: #eef0f7;
+        --muted: #9aa1b8;
+        --line: #2b3247;
+        --accent: #6f86ff;
+        --accent-ink: #10142a;
+        --real-bg: #16382a;
+        --real-ink: #7fd8a8;
+        --error: #ff8a7a;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", Meiryo, sans-serif;
+      line-height: 1.6;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 440px;
+      padding: 40px 32px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: 0 20px 50px -20px rgba(28, 34, 51, 0.25);
+    }
+
+    h1 {
+      margin: 0 0 28px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 0.04em;
+    }
+
+    .field {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 12px;
+    }
+    .field span {
+      font-size: 1.25rem;
+      font-weight: 500;
+    }
+
+    input {
+      width: 120px;
+      padding: 10px 8px;
+      font: inherit;
+      font-size: 2rem;
+      font-weight: 700;
+      text-align: center;
+      color: var(--ink);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid var(--line);
+      border-radius: 0;
+      outline: none;
+      transition: border-color 0.2s;
+      -moz-appearance: textfield;
+    }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input:focus { border-bottom-color: var(--accent); }
+
+    button {
+      display: block;
+      width: 100%;
+      margin-top: 28px;
+      padding: 14px;
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent-ink);
+      background: var(--accent);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.1s, filter 0.2s;
+    }
+    button:hover { filter: brightness(1.08); }
+    button:active { transform: scale(0.98); }
+    button:focus-visible,
+    input:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .error {
+      min-height: 1.5em;
+      margin: 12px 0 0;
+      font-size: 0.875rem;
+      text-align: center;
+      color: var(--error);
+    }
+
+    .result { margin-top: 12px; }
+    .result[hidden] { display: none; }
+
+    .summary {
+      margin: 0 0 12px;
+      font-size: 0.875rem;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 18px;
+    }
+    li + li { border-top: 1px solid var(--line); }
+
+    .era { font-weight: 500; }
+    .year { font-size: 1.25rem; font-weight: 700; }
+    .badge {
+      margin-left: 8px;
+      padding: 2px 8px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--real-ink);
+      background: var(--real-bg);
+      border-radius: 999px;
+      vertical-align: middle;
+    }
+
+    .note {
+      margin: 12px 0 0;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>令和から元号を変換</h1>
+
+    <div class="field">
+      <span>令和</span>
+      <input id="reiwa" type="number" min="1" max="500" step="1" inputmode="numeric"
+             placeholder="8" aria-label="令和の年数">
+      <span>年</span>
+    </div>
+
+    <button id="convert" type="button">変換する</button>
+    <p id="error" class="error" role="alert"></p>
+
+    <section id="result" class="result" hidden aria-live="polite">
+      <p id="summary" class="summary"></p>
+      <ul id="list"></ul>
+      <p class="note">
+        「実在」は、その年が実際にその元号の期間内にあたる場合です。
+        それ以外は、その元号が続いていたと仮定した換算値です。
+      </p>
+    </section>
+  </main>
+
+  <script>
+    // 令和元年 = 西暦2019年
+    const REIWA_START = 2019;
+
+    // start: 元年にあたる西暦 / end: 最終年（その元号で実際に存在した最後の西暦）
+    const ERAS = [
+      { name: "明治", start: 1868, end: 1912 },
+      { name: "大正", start: 1912, end: 1926 },
+      { name: "昭和", start: 1926, end: 1989 },
+      { name: "平成", start: 1989, end: 2019 },
+    ];
+
+    const input   = document.getElementById("reiwa");
+    const button  = document.getElementById("convert");
+    const errorEl = document.getElementById("error");
+    const result  = document.getElementById("result");
+    const summary = document.getElementById("summary");
+    const list    = document.getElementById("list");
+
+    function convert() {
+      const n = Number(input.value);
+
+      if (input.value === "" || !Number.isInteger(n) || n < 1 || n > 500) {
+        errorEl.textContent = "1〜500の整数を入力してください。";
+        result.hidden = true;
+        return;
+      }
+      errorEl.textContent = "";
+
+      const seireki = REIWA_START + n - 1;
+      summary.textContent = `令和${n}年 = 西暦${seireki}年`;
+
+      list.innerHTML = "";
+      ERAS.forEach((era) => {
+        const year = seireki - era.start + 1;
+        const isReal = seireki >= era.start && seireki <= era.end;
+
+        const li = document.createElement("li");
+
+        const name = document.createElement("span");
+        name.className = "era";
+        name.textContent = era.name;
+
+        const right = document.createElement("span");
+        const yearEl = document.createElement("span");
+        yearEl.className = "year";
+        yearEl.textContent = `${year}年`;
+        right.appendChild(yearEl);
+
+        if (isReal) {
+          const badge = document.createElement("span");
+          badge.className = "badge";
+          badge.textContent = "実在";
+          right.appendChild(badge);
+        }
+
+        li.append(name, right);
+        list.appendChild(li);
+      });
+
+      result.hidden = false;
+    }
+
+    button.addEventListener("click", convert);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") convert();
+    });
+  </script>
+</body>
+</html>
