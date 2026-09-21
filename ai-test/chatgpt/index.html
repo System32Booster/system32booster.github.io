@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロフィールカード</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <main class="profile-card">
+
+        <!-- プロフィール画像 -->
+        <div class="profile-image">
+            <img src="https://i.pravatar.cc/300?img=12" alt="プロフィール画像">
+        </div>
+
+        <!-- 名前 -->
+        <h1>Blue User</h1>
+
+        <!-- ユーザーID -->
+        <p class="username">@blue_user</p>
+
+        <!-- 自己紹介 -->
+        <p class="description">
+            PCやゲーム、Web制作が好きです。<br>
+            のんびり楽しく活動しています。
+        </p>
+
+        <!-- ステータス -->
+        <div class="status">
+            <span class="status-dot"></span>
+            オンライン
+        </div>
+
+        <!-- プロフィール情報 -->
+        <div class="info">
+
+            <div class="info-item">
+                <span class="number">128</span>
+                <span class="label">投稿</span>
+            </div>
+
+            <div class="info-item">
+                <span class="number">1.2K</span>
+                <span class="label">フォロワー</span>
+            </div>
+
+            <div class="info-item">
+                <span class="number">256</span>
+                <span class="label">フォロー</span>
+            </div>
+
+        </div>
+
+        <!-- ボタン -->
+        <div class="buttons">
+            <button id="followButton">フォローする</button>
+            <button id="messageButton" class="secondary-button">メッセージ</button>
+        </div>
+
+        <!-- メッセージ -->
+        <p id="message" class="message"></p>
+
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
