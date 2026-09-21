@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>プロフィールカード</title>
+  <!-- アイコン表示用のFontAwesome (SNSアイコン用) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    /* ===== ベーススタイル ===== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      /* 背景にさわやかなグラデーション */
+      background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+      color: #334155;
+      padding: 20px;
+    }
+
+    /* ===== プロフィールカード本体 ===== */
+    .profile-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 360px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px -5px rgba(14, 116, 144, 0.15),
+                  0 8px 10px -6px rgba(14, 116, 144, 0.1);
+      text-align: center;
+      
+      /* アニメーション用：初期状態を非表示に */
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* JavaScriptで追加される表示用クラス */
+    .profile-card.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* カードホバー時の立体アニメーション */
+    .profile-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 30px -10px rgba(14, 116, 144, 0.25);
+    }
+
+    /* ===== ヘッダー＆アバター表示 ===== */
+    .card-header {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      height: 100px;
+      position: relative;
+    }
+
+    .avatar-wrapper {
+      position: relative;
+      width: 96px;
+      height: 96px;
+      margin: 0 auto;
+      top: 50px; /* ヘッダーの下に飛び出させる */
+    }
+
+    .avatar {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid #ffffff;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
+
+    /* アバターホバー時に少し拡大 */
+    .profile-card:hover .avatar {
+      transform: scale(1.05);
+    }
+
+    /* ===== ボディ（名前・説明・SNS） ===== */
+    .card-body {
+      padding: 60px 24px 32px; /* 上パディングはアバターの飛び出し分確保 */
+    }
+
+    .user-name {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+
+    .user-tag {
+      font-size: 0.85rem;
+      color: #0284c7;
+      font-weight: 600;
+      margin-bottom: 16px;
+      letter-spacing: 0.05em;
+    }
+
+    .user-bio {
+      font-size: 0.9rem;
+      color: #64748b;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    /* ===== SNSアイコンリンク ===== */
+    .social-links {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .social-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background-color: #f0f9ff;
+      color: #0284c7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-size: 1.2rem;
+      transition: all 0.25s ease;
+    }
+
+    /* ボタンホバー時に青色のグラデーション化＋浮き上がり */
+    .social-btn:hover {
+      background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+      color: #ffffff;
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- プロフィールカード本体 -->
+  <div class="profile-card" id="profileCard">
+    <div class="card-header">
+      <div class="avatar-wrapper">
+        <!-- アバター画像（必要に応じてURLを変更してください） -->
+        <img class="avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" alt="プロフィール画像">
+      </div>
+    </div>
+    
+    <div class="card-body">
+      <h1 class="user-name">山田 太郎</h1>
+      <p class="user-tag">WEB DESIGNER / DEVELOPER</p>
+      <p class="user-bio">
+        シンプルで直感的なWebデザインとフロントエンド制作が得意です。青色とカフェ巡りが好きです。
+      </p>
+      
+      <!-- SNSリンク集 -->
+      <div class="social-links">
+        <a href="#" class="social-btn" aria-label="X (Twitter)">
+          <i class="fa-brands fa-x-twitter"></i>
+        </a>
+        <a href="#" class="social-btn" aria-label="GitHub">
+          <i class="fa-brands fa-github"></i>
+        </a>
+        <a href="#" class="social-btn" aria-label="Instagram">
+          <i class="fa-brands fa-instagram"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const card = document.getElementById('profileCard');
+      
+      // 画面読み込み時にふわっと表示させるアニメーション
+      setTimeout(() => {
+        card.classList.add('is-visible');
+      }, 100);
+    });
+  </script>
+</body>
+</html>
