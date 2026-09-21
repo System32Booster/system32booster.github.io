@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile Card</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;600;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style type="text/tailwindcss">
+    @theme {
+      --font-body: 'Noto Sans JP', sans-serif;
+      --font-display: 'Orbitron', sans-serif;
+      --color-deep: #0a1628;
+      --color-mid: #0d1b36;
+      --color-surface: #111f3a;
+      --color-card: #132542;
+      --color-sky: #38bdf8;
+      --color-sky-soft: #7dd3fc;
+      --color-cyan: #67e8f9;
+      --color-glow: #0ea5e9;
+    }
+  </style>
+
+  <style>
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: #0a1628;
+      overflow-x: hidden;
+    }
+
+    /* Animated gradient background */
+    .bg-gradient-animated {
+      background: linear-gradient(120deg, #0a1628 0%, #0d1b36 40%, #132542 70%, #0a1628 100%);
+      background-size: 300% 300%;
+      animation: bgShimmer 12s ease infinite;
+    }
+    @keyframes bgShimmer {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Floating orbs */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.35;
+      pointer-events: none;
+      animation: orbFloat 18s ease-in-out infinite alternate;
+    }
+    @keyframes orbFloat {
+      from { transform: translate(0, 0) scale(1); }
+      to { transform: translate(40px, -30px) scale(1.1); }
+    }
+
+    /* Card glass */
+    .glass-card {
+      background: rgba(17, 31, 58, 0.55);
+      backdrop-filter: blur(22px) saturate(1.2);
+      -webkit-backdrop-filter: blur(22px) saturate(1.2);
+      border: 1px solid rgba(56, 189, 248, 0.1);
+      box-shadow:
+        0 0 0 1px rgba(56,189,248,0.08) inset,
+        0 25px 60px rgba(14,165,233,0.12);
+    }
+
+    /* Entrance animations */
+    @keyframes riseUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .anim-rise {
+      animation: riseUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      opacity: 0;
+    }
+    .anim-delay-1 { animation-delay: 0.15s; }
+    .anim-delay-2 { animation-delay: 0.3s; }
+    .anim-delay-3 { animation-delay: 0.45s; }
+    .anim-delay-4 { animation-delay: 0.6s; }
+    .anim-delay-5 { animation-delay: 0.75s; }
+
+    /* Glowing text */
+    .glow-text {
+      text-shadow: 0 0 30px rgba(56,189,248,0.35);
+    }
+
+    /* Badge pill */
+    .badge-pill {
+      background: linear-gradient(135deg, rgba(56,189,248,0.15), rgba(103,232,249,0.1));
+      border: 1px solid rgba(56,189,248,0.25);
+    }
+
+    /* Skill bar animation */
+    .skill-fill {
+      width: 0%;
+      animation: fillUp 1.2s ease-out forwards;
+    }
+    @keyframes fillUp {
+      to { width: var(--target); }
+    }
+
+    /* Link hover underline */
+    .link-underline {
+      position: relative;
+    }
+    .link-underline::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 50%;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #38bdf8, #67e8f9);
+      border-radius: 2px;
+      transition: width 0.3s ease, left 0.3s ease;
+    }
+    .link-underline:hover::after {
+      width: 100%;
+      left: 0;
+    }
+
+    /* Avatar ring */
+    .avatar-ring {
+      box-shadow: 0 0 0 3px rgba(56,189,248,0.2), 0 0 0 6px rgba(14,165,233,0.15);
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-animated min-h-screen flex items-center justify-center px-6 py-16 relative">
+
+  <!-- Background decorative orbs -->
+  <div class="orb w-[500px] h-[500px] bg-sky/25 -top-40 -left-40"></div>
+  <div class="orb w-[400px] h-[400px] bg-cyan/20 bottom-20 -right-20" style="animation-delay: -6s;"></div>
+
+  <!-- Main Card -->
+  <main class="relative z-10 max-w-md w-full">
+
+    <article class="glass-card rounded-[2.5rem] p-8 md:p-10 text-center relative overflow-hidden">
+
+      <!-- Subtle top glow line -->
+      <div class="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-sky/50 to-transparent"></div>
+
+      <!-- Avatar -->
+      <div class="anim-rise anim-delay-1 mb-6">
+        <div class="inline-block relative">
+          <img
+            src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&h=300&fit=crop&crop=face&q=80"
+            alt="Profile"
+            class="w-28 h-28 rounded-full object-cover avatar-ring"
+          >
+          <span class="absolute bottom-1 right-1 w-5 h-5 bg-cyan rounded-full border-[3px] border-deep shadow-lg shadow-cyan/30"></span>
+        </div>
+      </div>
+
+      <!-- Name & Role -->
+      <h1 class="anim-rise anim-delay-2 font-display text-3xl md:text-4xl font-bold text-white mb-1 glow-text tracking-tight">
+        Sora Tanaka
+      </h1>
+      <p class="anim-rise anim-delay-2 text-sky-soft text-sm md:text-base font-light mb-6">
+        Frontend Developer
+      </p>
+
+      <!-- Bio -->
+      <p class="anim-rise anim-delay-3 text-slate-300/80 text-sm md:text-base leading-relaxed mb-8 px-2">
+        シンプルで直感的なUIを作るのが好きです。<br>
+        青い光に包まれた世界をコードで表現しています。
+      </p>
+
+      <!-- Tags -->
+      <div class="anim-rise anim-delay-3 flex flex-wrap justify-center gap-2 mb-8">
+        <span class="badge-pill px-3.5 py-1.5 rounded-full text-xs md:text-sm text-sky-soft font-medium">HTML</span>
+        <span class="badge-pill px-3.5 py-1.5 rounded-full text-xs md:text-sm text-sky-soft font-medium">CSS</span>
+        <span class="badge-pill px-3.5 py-1.5 rounded-full text-xs md:text-sm text-sky-soft font-medium">JavaScript</span>
+        <span class="badge-pill px-3.5 py-1.5 rounded-full text-xs md:text-sm text-sky-soft font-medium">UI/UX</span>
+      </div>
+
+      <!-- Skills -->
+      <div class="anim-rise anim-delay-4 mb-8 text-left">
+        <h3 class="text-sky-soft text-xs uppercase tracking-[0.2em] font-semibold mb-4">Skills</h3>
+        <div class="space-y-3">
+          <div>
+            <div class="flex justify-between text-xs text-slate-300 mb-1"><span>HTML / CSS</span><span>95%</span></div>
+            <div class="h-1.5 w-full bg-deep/60 rounded-full overflow-hidden"><div class="skill-fill h-full bg-gradient-to-r from-sky to-cyan rounded-full" style="--target:95%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-slate-300 mb-1"><span>JavaScript</span><span>82%</span></div>
+            <div class="h-1.5 w-full bg-deep/60 rounded-full overflow-hidden"><div class="skill-fill h-full bg-gradient-to-r from-sky to-cyan rounded-full" style="--target:82%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-slate-300 mb-1"><span>UI Design</span><span>78%</span></div>
+            <div class="h-1.5 w-full bg-deep/60 rounded-full overflow-hidden"><div class="skill-fill h-full bg-gradient-to-r from-sky to-cyan rounded-full" style="--target:78%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contacts -->
+      <div class="anim-rise anim-delay-5 flex justify-center gap-6">
+        <a href="#" aria-label="GitHub" class="text-slate-400 hover:text-sky transition-colors duration-300 text-xl link-underline"><i class="fa-brands fa-github"></i></a>
+        <a href="#" aria-label="Twitter" class="text-slate-400 hover:text-sky transition-colors duration-300 text-xl link-underline"><i class="fa-brands fa-x-twitter"></i></a>
+        <a href="#" aria-label="Website" class="text-slate-400 hover:text-sky transition-colors duration-300 text-xl link-underline"><i class="fa-solid fa-globe"></i></a>
+      </div>
+
+    </article>
+  </main>
+
+</body>
+</html>
