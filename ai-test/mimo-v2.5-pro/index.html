@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile Card</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    /* ===== Background ===== */
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #e0f2fe, #bae6fd, #93c5fd);
+      background-size: 400% 400%;
+      animation: gradientShift 8s ease infinite;
+      font-family: 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    }
+
+    @keyframes gradientShift {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* ===== Card ===== */
+    .card {
+      position: relative;
+      width: 360px;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+      border-radius: 24px;
+      box-shadow:
+        0 8px 32px rgba(30, 64, 175, 0.12),
+        0 2px 8px rgba(30, 64, 175, 0.06);
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(40px) scale(0.96);
+      animation: cardEntry 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes cardEntry {
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* ===== Banner ===== */
+    .banner {
+      height: 110px;
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .banner::before,
+    .banner::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.15;
+    }
+
+    .banner::before {
+      width: 180px;
+      height: 180px;
+      background: white;
+      top: -60px;
+      right: -30px;
+      animation: floatBubble 6s ease-in-out infinite;
+    }
+
+    .banner::after {
+      width: 100px;
+      height: 100px;
+      background: white;
+      bottom: -30px;
+      left: 20px;
+      animation: floatBubble 6s ease-in-out 2s infinite reverse;
+    }
+
+    @keyframes floatBubble {
+      0%, 100% { transform: translate(0, 0); }
+      50%      { transform: translate(-12px, 10px); }
+    }
+
+    /* ===== Avatar ===== */
+    .avatar-wrapper {
+      display: flex;
+      justify-content: center;
+      margin-top: -52px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .avatar {
+      width: 104px;
+      height: 104px;
+      border-radius: 50%;
+      border: 4px solid white;
+      background: linear-gradient(135deg, #60a5fa, #2563eb);
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: avatarPop 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
+      cursor: default;
+      transition: transform 0.3s ease;
+      overflow: hidden;
+    }
+
+    .avatar:hover {
+      transform: scale(1.08);
+    }
+
+    .avatar svg {
+      width: 56px;
+      height: 56px;
+      color: white;
+    }
+
+    @keyframes avatarPop {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    /* ===== Status Dot ===== */
+    .status-dot {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      width: 18px;
+      height: 18px;
+      background: #22c55e;
+      border: 3px solid white;
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.45); }
+      50%      { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+    }
+
+    /* ===== Info ===== */
+    .info {
+      text-align: center;
+      padding: 20px 24px 0;
+    }
+
+    .name {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0;
+      opacity: 0;
+      animation: fadeUp 0.5s ease 0.6s forwards;
+    }
+
+    .role {
+      font-size: 0.88rem;
+      color: #2563eb;
+      font-weight: 600;
+      margin-top: 4px;
+      opacity: 0;
+      animation: fadeUp 0.5s ease 0.75s forwards;
+    }
+
+    .bio {
+      font-size: 0.82rem;
+      color: #64748b;
+      line-height: 1.7;
+      margin-top: 12px;
+      opacity: 0;
+      animation: fadeUp 0.5s ease 0.9s forwards;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== Stats ===== */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      padding: 20px 24px;
+      opacity: 0;
+      animation: fadeUp 0.5s ease 1.05s forwards;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1e40af;
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* ===== Skills ===== */
+    .skills {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 24px 8px;
+      opacity: 0;
+      animation: fadeUp 0.5s ease 1.15s forwards;
+    }
+
+    .skill-tag {
+      padding: 5px 14px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+      transition: all 0.25s ease;
+      cursor: default;
+    }
+
+    .skill-tag:hover {
+      background: #2563eb;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+
+    /* ===== Divider ===== */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #dbeafe, transparent);
+      margin: 12px 24px;
+    }
+
+    /* ===== Buttons ===== */
+    .buttons {
+      display: flex;
+      gap: 12px;
+      padding: 16px 24px 24px;
+      opacity: 0;
+      animation: fadeUp 0.5s ease 1.3s forwards;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px 0;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+      color: white;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: #2563eb;
+      border: 2px solid #bfdbfe;
+    }
+
+    .btn-outline:hover {
+      background: #eff6ff;
+      border-color: #2563eb;
+      transform: translateY(-2px);
+    }
+
+    /* ===== Floating Particles ===== */
+    .particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(37, 99, 235, 0.12);
+      animation: drift linear infinite;
+    }
+
+    @keyframes drift {
+      0%   { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+    }
+
+    /* ===== Toast ===== */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1e40af;
+      color: white;
+      padding: 12px 28px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(30, 64, 175, 0.25);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: 100;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Particles -->
+  <div class="particles" id="particles"></div>
+
+  <!-- Profile Card -->
+  <div class="card">
+    <!-- Banner -->
+    <div class="banner"></div>
+
+    <!-- Avatar -->
+    <div class="avatar-wrapper">
+      <div class="avatar">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
+        </svg>
+        <span class="status-dot"></span>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="info">
+      <h2 class="name">田中 太郎</h2>
+      <p class="role">フロントエンドエンジニア</p>
+      <p class="bio">美しいUIとインタラクティブな体験を作ることが好きです。<br>東京を拠点にWeb制作に携わっています。</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value" id="statProjects">0</div>
+        <div class="stat-label">Projects</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="statFollowers">0</div>
+        <div class="stat-label">Followers</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="statStars">0</div>
+        <div class="stat-label">Stars</div>
+      </div>
+    </div>
+
+    <!-- Skills -->
+    <div class="skills">
+      <span class="skill-tag">HTML</span>
+      <span class="skill-tag">CSS</span>
+      <span class="skill-tag">JavaScript</span>
+      <span class="skill-tag">React</span>
+      <span class="skill-tag">Vue.js</span>
+      <span class="skill-tag">TypeScript</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Buttons -->
+    <div class="buttons">
+      <button class="btn btn-primary" onclick="showToast('フォローしました！')">フォローする</button>
+      <button class="btn btn-outline" onclick="showToast('メッセージを送信しました')">メッセージ</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ===== Floating Particles =====
+    (function createParticles() {
+      const container = document.getElementById('particles');
+      for (let i = 0; i < 12; i++) {
+        const el = document.createElement('div');
+        el.classList.add('particle');
+        const size = Math.random() * 20 + 6;
+        el.style.width = size + 'px';
+        el.style.height = size + 'px';
+        el.style.left = Math.random() * 100 + '%';
+        el.style.animationDuration = (Math.random() * 12 + 10) + 's';
+        el.style.animationDelay = (Math.random() * 8) + 's';
+        container.appendChild(el);
+      }
+    })();
+
+    // ===== Count Up Animation =====
+    function countUp(el, target, duration) {
+      const start = performance.now();
+      function update(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        el.textContent = Math.floor(eased * target);
+        if (progress < 1) requestAnimationFrame(update);
+      }
+      requestAnimationFrame(update);
+    }
+
+    // Trigger count-up after card appears
+    setTimeout(() => {
+      countUp(document.getElementById('statProjects'), 48, 1200);
+      countUp(document.getElementById('statFollowers'), 1240, 1400);
+      countUp(document.getElementById('statStars'), 892, 1300);
+    }, 1400);
+
+    // ===== Toast =====
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+  </script>
+
+</body>
+</html>
