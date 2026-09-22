@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aero Invaders</title>
+<style>
+/* ============================================================
+   ベース
+   ============================================================ */
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  background:#03080f;
+  color:#eaf6ff;
+  font-family:"Segoe UI Variable Display","Segoe UI","Yu Gothic UI",Meiryo,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  user-select:none;
+}
+
+/* ============================================================
+   背景シーン(Aero オーロラ)
+   ============================================================ */
+.scene{
+  position:fixed; inset:0; z-index:0; overflow:hidden;
+  background:
+    radial-gradient(120% 90% at 50% -10%, #1b4f7d 0%, #0a2440 40%, #04101f 72%, #01060c 100%);
+}
+.aurora{
+  position:absolute; border-radius:50%;
+  filter:blur(70px);
+  mix-blend-mode:screen;
+  will-change:transform;
+}
+.a1{
+  width:72vmax;height:72vmax; left:-22vmax; top:-28vmax;
+  background:radial-gradient(circle, rgba(64,190,255,.55), rgba(20,90,200,.14) 45%, transparent 70%);
+  animation:drift1 30s ease-in-out infinite alternate;
+}
+.a2{
+  width:60vmax;height:60vmax; right:-18vmax; top:-14vmax;
+  background:radial-gradient(circle, rgba(150,110,255,.45), rgba(60,30,160,.12) 45%, transparent 70%);
+  animation:drift2 24s ease-in-out infinite alternate;
+}
+.a3{
+  width:80vmax;height:62vmax; left:8vmax; bottom:-34vmax;
+  background:radial-gradient(circle, rgba(0,255,215,.26), rgba(0,120,160,.10) 45%, transparent 70%);
+  animation:drift3 36s ease-in-out infinite alternate;
+}
+.a4{
+  width:44vmax;height:44vmax; right:6vmax; bottom:-16vmax;
+  background:radial-gradient(circle, rgba(255,120,200,.22), rgba(120,20,90,.08) 45%, transparent 70%);
+  animation:drift4 28s ease-in-out infinite alternate;
+}
+@keyframes drift1{
+  0%{transform:translate3d(0,0,0) scale(1);}
+  50%{transform:translate3d(9vmax,7vmax,0) scale(1.16);}
+  100%{transform:translate3d(-5vmax,11vmax,0) scale(.94);}
+}
+@keyframes drift2{
+  0%{transform:translate3d(0,0,0) scale(1.05);}
+  100%{transform:translate3d(-11vmax,9vmax,0) scale(.88);}
+}
+@keyframes drift3{
+  0%{transform:translate3d(0,0,0) scale(.95);}
+  50%{transform:translate3d(-8vmax,-6vmax,0) scale(1.12);}
+  100%{transform:translate3d(7vmax,-3vmax,0) scale(1);}
+}
+@keyframes drift4{
+  0%{transform:translate3d(0,0,0) scale(1);}
+  100%{transform:translate3d(-6vmax,-8vmax,0) scale(1.2);}
+}
+
+/* 斜めに流れるハイライト */
+.sweep{
+  position:absolute; inset:-50%;
+  background:linear-gradient(115deg,
+    transparent 42%,
+    rgba(180,230,255,.07) 47%,
+    rgba(255,255,255,.14) 50%,
+    rgba(180,230,255,.07) 53%,
+    transparent 58%);
+  animation:sweepMove 14s linear infinite;
+  pointer-events:none;
+}
+@keyframes sweepMove{
+  0%{transform:translateX(-55%);}
+  100%{transform:translateX(55%);}
+}
+
+/* ボケ光(JSで生成) */
+.bokeh{position:absolute; inset:0; pointer-events:none;}
+.bokeh i{
+  position:absolute; bottom:-12vh; border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,
+    rgba(255,255,255,.95), rgba(150,215,255,.35) 42%, rgba(80,150,255,0) 72%);
+  opacity:0;
+  animation:floatUp linear infinite;
+  will-change:transform,opacity;
+}
+@keyframes floatUp{
+  0%{transform:translate3d(0,0,0) scale(.5); opacity:0;}
+  12%{opacity:.85;}
+  85%{opacity:.45;}
+  100%{transform:translate3d(var(--dx),-118vh,0) scale(1.15); opacity:0;}
+}
+
+/* ============================================================
+   Aero ウィンドウ
+   ============================================================ */
+.window{
+  position:relative; z-index:2;
+  width:min(94vw, 940px, 124vh);
+  border-radius:12px;
+  background:
+    linear-gradient(180deg,
+      rgba(226,242,255,.30) 0%,
+      rgba(160,205,245,.15) 45%,
+      rgba(90,140,205,.20) 100%);
+  backdrop-filter:blur(20px) saturate(170%);
+  -webkit-backdrop-filter:blur(20px) saturate(170%);
+  border:1px solid rgba(255,255,255,.42);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.85),
+    inset 0 -1px 0 rgba(255,255,255,.16),
+    0 0 0 1px rgba(3,20,45,.55),
+    0 24px 70px rgba(0,0,0,.68),
+    0 0 70px rgba(70,160,255,.18);
+  overflow:hidden;
+  animation:windowIn .8s cubic-bezier(.2,.8,.3,1.2) both;
+  transform-origin:50% 100%;
+}
+@keyframes windowIn{
+  from{opacity:0; transform:translateY(26px) scale(.955); filter:blur(7px);}
+  to{opacity:1; transform:none; filter:blur(0);}
+}
+.window.minimized{
+  animation:minimizeAway .5s cubic-bezier(.4,0,.85,.3) forwards;
+  pointer-events:none;
+}
+@keyframes minimizeAway{
+  to{transform:translateY(58vh) scale(.18); opacity:0; filter:blur(9px);}
+}
+.window.restoring{
+  animation:restoreIn .55s cubic-bezier(.2,.9,.3,1.35) both;
+}
+@keyframes restoreIn{
+  from{transform:translateY(58vh) scale(.18); opacity:0; filter:blur(9px);}
+  to{transform:none; opacity:1; filter:blur(0);}
+}
+
+/* ---- タイトルバー ---- */
+.titlebar{
+  position:relative;
+  height:38px;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 10px 0 14px;
+  background:linear-gradient(180deg,
+    rgba(255,255,255,.40) 0%,
+    rgba(205,232,255,.14) 49%,
+    rgba(140,190,240,.18) 51%,
+    rgba(185,222,255,.10) 100%);
+  border-bottom:1px solid rgba(255,255,255,.25);
+}
+.titlebar::after{
+  content:''; position:absolute; left:0; right:0; top:0; height:50%;
+  background:linear-gradient(180deg, rgba(255,255,255,.34), transparent);
+  pointer-events:none;
+}
+.tb-left{display:flex; align-items:center; gap:9px;}
+.tb-icon{
+  width:16px; height:16px; border-radius:4px;
+  background:linear-gradient(150deg,#eaf8ff,#57b8ff 45%,#1256a8);
+  box-shadow:0 0 10px rgba(110,210,255,.95), inset 0 1px 0 rgba(255,255,255,.9);
+  animation:iconPulse 3.2s ease-in-out infinite;
+}
+@keyframes iconPulse{
+  0%,100%{box-shadow:0 0 8px rgba(110,210,255,.6), inset 0 1px 0 rgba(255,255,255,.9);}
+  50%{box-shadow:0 0 20px rgba(150,235,255,1), inset 0 1px 0 rgba(255,255,255,.9);}
+}
+.tb-title{
+  font-size:13px; font-weight:600; letter-spacing:.09em;
+  color:#f4fcff;
+  text-shadow:0 0 9px rgba(140,220,255,.9), 0 1px 1px rgba(0,30,60,.85);
+}
+.tb-buttons{display:flex; gap:5px; z-index:1;}
+.wbtn{
+  position:relative;
+  width:27px; height:18px;
+  border-radius:4px;
+  border:1px solid rgba(255,255,255,.6);
+  background:linear-gradient(180deg,#fdfeff 0%,#d9e8f6 47%,#b7cfe5 53%,#e9f4fd 100%);
+  box-shadow:0 1px 2px rgba(0,20,50,.45), inset 0 1px 0 rgba(255,255,255,.95);
+  cursor:pointer; padding:0;
+  transition:filter .18s, box-shadow .18s, transform .12s;
+}
+.wbtn:hover{
+  filter:brightness(1.14) saturate(1.25);
+  box-shadow:0 0 12px rgba(120,220,255,.95), 0 1px 2px rgba(0,20,50,.45), inset 0 1px 0 #fff;
+}
+.wbtn:active{transform:translateY(1px);}
+.wbtn.close{
+  background:linear-gradient(180deg,#ffb6a8 0%,#ee5f47 47%,#c9341f 53%,#ff937f 100%);
+}
+.wbtn.min::before{
+  content:''; position:absolute; left:7px; right:7px; bottom:4px; height:2px;
+  background:#26527c; border-radius:1px;
+}
+.wbtn.max::before{
+  content:''; position:absolute; inset:5px 7px; border:1.5px solid #26527c; border-radius:1px;
+}
+.wbtn.close::before,.wbtn.close::after{
+  content:''; position:absolute; left:6px; right:6px; top:8px; height:2px;
+  background:#fff; border-radius:1px;
+}
+.wbtn.close::before{transform:rotate(45deg);}
+.wbtn.close::after{transform:rotate(-45deg);}
+
+/* ---- 本体 ---- */
+.window-body{
+  padding:10px 12px 12px;
+  display:flex; flex-direction:column; gap:8px;
+}
+
+/* ---- HUD ---- */
+.hud{display:flex; gap:8px; align-items:stretch;}
+.hud-item{
+  flex:1;
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:6px 12px;
+  border-radius:8px;
+  background:linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.045));
+  border:1px solid rgba(255,255,255,.28);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55), 0 2px 10px rgba(0,20,50,.28);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+}
+.hud-item.wide{flex:1.35;}
+.hud-label{
+  font-size:9.5px; letter-spacing:.2em; color:#bfe4ff;
+  text-shadow:0 0 7px rgba(90,180,255,.75);
+}
+.hud-value{
+  display:inline-block;
+  font-size:17px; font-weight:700; color:#fff;
+  font-variant-numeric:tabular-nums;
+  text-shadow:0 0 10px rgba(120,220,255,.95), 0 0 24px rgba(60,150,255,.6);
+}
+.hud-value.pop{animation:popVal .34s ease-out;}
+@keyframes popVal{
+  0%{transform:scale(1);}
+  40%{transform:scale(1.28);}
+  100%{transform:scale(1);}
+}
+.lives-row{display:flex; gap:5px;}
+.life{
+  width:15px; height:13px;
+  background:linear-gradient(180deg,#f2fdff,#5cc4ff 60%,#1a76c8);
+  clip-path:polygon(50% 0%,100% 100%,50% 76%,0% 100%);
+  filter:drop-shadow(0 0 6px rgba(90,200,255,.95));
+  animation:lifeIn .35s cubic-bezier(.2,.9,.3,1.4) both;
+}
+@keyframes lifeIn{from{transform:scale(0) rotate(-40deg); opacity:0;} to{transform:none; opacity:1;}}
+
+/* ---- スクリーン ---- */
+.screen{
+  position:relative;
+  width:100%;
+  aspect-ratio:900 / 560;
+  border-radius:8px;
+  overflow:hidden;
+  background:linear-gradient(180deg,
+    rgba(2,10,26,.55) 0%,
+    rgba(4,18,40,.72) 60%,
+    rgba(6,26,56,.86) 100%);
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow:
+    inset 0 0 70px rgba(0,70,140,.55),
+    inset 0 2px 16px rgba(0,0,0,.65),
+    0 6px 24px rgba(0,0,0,.45);
+  touch-action:none;
+}
+canvas{display:block; width:100%; height:100%;}
+
+.scanlines{
+  position:absolute; inset:0; pointer-events:none; opacity:.22;
+  background:repeating-linear-gradient(180deg,
+    rgba(255,255,255,.07) 0 1px, transparent 1px 3px);
+  mix-blend-mode:overlay;
+  animation:scanShift 9s linear infinite;
+}
+@keyframes scanShift{from{background-position-y:0;} to{background-position-y:90px;}}
+
+.glass-sheen{
+  position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(118deg,
+    rgba(255,255,255,.13) 0%,
+    rgba(255,255,255,0) 34%,
+    rgba(255,255,255,0) 62%,
+    rgba(255,255,255,.07) 100%);
+  overflow:hidden;
+}
+.glass-sheen::after{
+  content:'';
+  position:absolute; top:-60%; left:-70%; width:36%; height:220%;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.20), transparent);
+  transform:rotate(16deg);
+  animation:sheen 7.5s ease-in-out infinite;
+}
+@keyframes sheen{
+  0%{left:-70%;}
+  52%{left:135%;}
+  100%{left:135%;}
+}
+
+/* ---- オーバーレイ ---- */
+.overlay{
+  position:absolute; inset:0;
+  display:grid; place-items:center;
+  background:radial-gradient(circle at 50% 45%, rgba(10,45,90,.42), rgba(2,8,20,.80));
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
+  opacity:0; pointer-events:none;
+  transition:opacity .38s ease;
+  text-align:center;
+  padding:20px;
+}
+.overlay.show{opacity:1; pointer-events:auto;}
+.ov-inner{animation:ovIn .5s cubic-bezier(.2,.9,.3,1.3) both;}
+.overlay.show .ov-inner{animation:ovIn .5s cubic-bezier(.2,.9,.3,1.3) both;}
+@keyframes ovIn{
+  from{transform:translateY(14px) scale(.94); opacity:0; filter:blur(5px);}
+  to{transform:none; opacity:1; filter:blur(0);}
+}
+.ov-title{
+  font-size:clamp(26px,4.2vw,48px);
+  font-weight:800;
+  letter-spacing:.14em;
+  line-height:1.15;
+  background:linear-gradient(180deg,#ffffff 0%,#b8e8ff 46%,#4aa8ff 100%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  animation:titleGlow 3s ease-in-out infinite;
+}
+@keyframes titleGlow{
+  0%,100%{filter:drop-shadow(0 0 13px rgba(90,190,255,.65));}
+  50%{filter:drop-shadow(0 0 32px rgba(150,235,255,1));}
+}
+.ov-sub{
+  margin-top:12px;
+  font-size:13px; letter-spacing:.12em;
+  color:#bfe4ff;
+  text-shadow:0 0 12px rgba(80,180,255,.85);
+  line-height:1.9;
+}
+.ov-sub kbd{
+  display:inline-block;
+  padding:1px 7px; margin:0 2px;
+  border-radius:5px;
+  font-family:inherit; font-size:11px;
+  background:linear-gradient(180deg, rgba(255,255,255,.32), rgba(255,255,255,.08));
+  border:1px solid rgba(255,255,255,.42);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7), 0 2px 5px rgba(0,20,50,.4);
+  color:#eaf9ff;
+}
+.aero-btn{
+  position:relative;
+  margin-top:22px;
+  padding:11px 40px;
+  border-radius:22px;
+  font:inherit; font-size:14px; font-weight:700; letter-spacing:.18em;
+  color:#04304f;
+  cursor:pointer;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.95);
+  background:linear-gradient(180deg,#ffffff 0%,#d3ecff 45%,#8ecdf7 50%,#dcf2ff 100%);
+  box-shadow:
+    0 6px 20px rgba(0,40,80,.5),
+    inset 0 1px 0 rgba(255,255,255,1),
+    0 0 24px rgba(110,200,255,.55);
+  transition:transform .18s cubic-bezier(.2,.9,.3,1.4), box-shadow .18s, filter .18s;
+}
+.aero-btn::after{
+  content:'';
+  position:absolute; top:0; left:-60%; width:40%; height:100%;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.85), transparent);
+  transform:skewX(-20deg);
+  animation:btnShine 3.4s ease-in-out infinite;
+}
+@keyframes btnShine{
+  0%{left:-60%;}
+  55%{left:130%;}
+  100%{left:130%;}
+}
+.aero-btn:hover{
+  transform:translateY(-2px) scale(1.045);
+  filter:brightness(1.06);
+  box-shadow:0 11px 28px rgba(0,60,120,.6), 0 0 40px rgba(130,220,255,.95), inset 0 1px 0 #fff;
+}
+.aero-btn:active{transform:translateY(0) scale(.975);}
+
+/* ---- ステータスバー ---- */
+.statusbar{
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:10.5px; letter-spacing:.09em;
+  color:#a8d4f5;
+  padding:0 4px;
+  text-shadow:0 0 8px rgba(70,150,255,.6);
+}
+.statusbar b{
+  color:#eaf9ff; font-weight:600;
+  text-shadow:0 0 10px rgba(120,220,255,.95);
+}
+
+/* ---- 復元ボタン ---- */
+.restore-btn{
+  position:fixed; left:50%; bottom:26px; z-index:60;
+  transform:translate(-50%, 160%);
+  opacity:0;
+  padding:11px 26px;
+  border-radius:22px;
+  font:inherit; font-size:12.5px; font-weight:700; letter-spacing:.16em;
+  color:#053252;
+  cursor:pointer;
+  border:1px solid rgba(255,255,255,.95);
+  background:linear-gradient(180deg,#ffffff 0%,#d3ecff 45%,#8ecdf7 50%,#dcf2ff 100%);
+  box-shadow:0 8px 24px rgba(0,20,50,.55), 0 0 26px rgba(110,200,255,.6), inset 0 1px 0 #fff;
+  transition:transform .45s cubic-bezier(.2,.9,.3,1.35), opacity .3s;
+}
+.restore-btn.show{transform:translate(-50%,0); opacity:1;}
+.restore-btn:hover{filter:brightness(1.08);}
+</style>
+</head>
+<body>
+
+<!-- ============ 背景 ============ -->
+<div class="scene">
+  <div class="aurora a1"></div>
+  <div class="aurora a2"></div>
+  <div class="aurora a3"></div>
+  <div class="aurora a4"></div>
+  <div class="bokeh" id="bokeh"></div>
+  <div class="sweep"></div>
+</div>
+
+<!-- ============ ウィンドウ ============ -->
+<main class="window" id="windowEl">
+  <div class="titlebar">
+    <div class="tb-left">
+      <div class="tb-icon"></div>
+      <span class="tb-title">Aero Invaders</span>
+    </div>
+    <div class="tb-buttons">
+      <button class="wbtn min"   id="btnMin"   title="最小化"></button>
+      <button class="wbtn max"   id="btnMax"   title="全画面"></button>
+      <button class="wbtn close" id="btnClose" title="閉じる"></button>
+    </div>
+  </div>
+
+  <div class="window-body">
+    <div class="hud">
+      <div class="hud-item">
+        <span class="hud-label">SCORE</span>
+        <span class="hud-value" id="uiScore">0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">WAVE</span>
+        <span class="hud-value" id="uiWave">1</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">HI</span>
+        <span class="hud-value" id="uiHi">0</span>
+      </div>
+      <div class="hud-item wide">
+        <span class="hud-label">LIVES</span>
+        <span class="lives-row" id="uiLives"></span>
+      </div>
+    </div>
+
+    <div class="screen" id="screen">
+      <canvas id="game"></canvas>
+      <div class="scanlines"></div>
+      <div class="glass-sheen"></div>
+      <div class="overlay" id="overlay">
+        <div class="ov-inner">
+          <div class="ov-title" id="ovTitle">AERO INVADERS</div>
+          <div class="ov-sub"  id="ovSub"></div>
+          <button class="aero-btn" id="ovBtn">START</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <span>← → / A D 移動　SPACE 発射　P 一時停止　M サウンド</span>
+      <span id="uiStatus"><b>READY</b></span>
+    </div>
+  </div>
+</main>
+
+<button class="restore-btn" id="restoreBtn">Aero Invaders を復元</button>
+
+<script>
+(() => {
+"use strict";
+
+/* ============================================================
+   0. ユーティリティ
+   ============================================================ */
+const rand  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+const TAU = Math.PI * 2;
+
+/* ============================================================
+   1. キャンバス設定
+   ============================================================ */
+const canvas = document.getElementById('game');
+const ctx    = canvas.getContext('2d');
+const W = 900, H = 560;
+
+function fitCanvas() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width  = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+fitCanvas();
+addEventListener('resize', fitCanvas);
+
+/* ============================================================
+   2. インベーダーのスプライト(ピクセルアート)
+   ============================================================ */
+const PATTERNS = [
+  [ // type0 : イカ (30pt)
+    ["00011000","00111100","01111110","11011011","11111111","00100100","01011010","10100101"],
+    ["00011000","00111100","01111110","11011011","11111111","01011010","10000001","01000010"]
+  ],
+  [ // type1 : カニ (20pt)
+    ["00111100","01111110","11111111","11011011","11111111","00100100","00111100","01100110"],
+    ["00111100","01111110","11111111","11011011","11111111","01000010","10100101","01000010"]
+  ],
+  [ // type2 : タコ (10pt)
+    ["00111100","01111110","11111111","11111111","01111110","00100100","01011010","10100101"],
+    ["00111100","01111110","11111111","11111111","01111110","01011010","10000001","01000010"]
+  ]
+];
+const ROW_COLORS = ['#7fe9ff', '#9cff9c', '#ffe27a', '#ff9fe0', '#b9a3ff'];
+const ROW_POINTS = [30, 20, 20, 10, 10];
+
+const SPR_PX = 4, SPR_PAD = 11, SPR_SIZE = 8 * SPR_PX + SPR_PAD * 2; // 54
+
+function makeSprite(pattern, color) {
+  const c = document.createElement('canvas');
+  c.width = c.height = SPR_SIZE;
+  const g = c.getContext('2d');
+
+  // 発光する本体
+  g.shadowColor = color;
+  g.shadowBlur  = 11;
+  g.fillStyle   = color;
+  for (let y = 0; y < 8; y++)
+    for (let x = 0; x < 8; x++)
+      if (pattern[y][x] === '1')
+        g.fillRect(SPR_PAD + x * SPR_PX, SPR_PAD + y * SPR_PX, SPR_PX, SPR_PX);
+
+  // もう一度重ねて発光を強く
+  g.shadowBlur = 6;
+  for (let y = 0; y < 8; y++)
+    for (let x = 0; x < 8; x++)
+      if (pattern[y][x] === '1')
+        g.fillRect(SPR_PAD + x * SPR_PX, SPR_PAD + y * SPR_PX, SPR_PX, SPR_PX);
+
+  // ガラスっぽいハイライト
+  g.shadowBlur = 0;
+  g.fillStyle = 'rgba(255,255,255,0.45)';
+  for (let y = 0; y < 8; y++)
+    for (let x = 0; x < 8; x++)
+      if (pattern[y][x] === '1')
+        g.fillRect(SPR_PAD + x * SPR_PX + 1, SPR_PAD + y * SPR_PX + 1, SPR_PX - 2, SPR_PX - 2);
+
+  return c;
+}
+
+const spriteCache = new Map();
+function spriteFor(row, frame) {
+  const key = row + '_' + frame;
+  let s = spriteCache.get(key);
+  if (s) return s;
+  const type = row === 0 ? 0 : (row < 3 ? 1 : 2);
+  s = makeSprite(PATTERNS[type][frame], ROW_COLORS[row]);
+  spriteCache.set(key, s);
+  return s;
+}
+
+/* ============================================================
+   3. ゲーム状態
+   ============================================================ */
+const COLS = 11, ROWS = 5;
+const CELL_W = 56, CELL_H = 46;
+const GRID_W  = COLS * CELL_W;
+const START_X = (W - GRID_W) / 2 + CELL_W / 2;
+const START_Y = 92;
+
+const state = {
+  mode: 'title',            // title | playing | paused | waveclear | over
+  time: 0,
+  score: 0, hi: 0, lives: 3, wave: 1,
+  player: null,
+  invaders: [], bullets: [], ebullets: [], particles: [], rings: [], bunkers: [],
+  dir: 1,
+  stepTimer: 0.8,
+  stepInterval: 0.8,
+  efireTimer: 1.2,
+  waveTimer: 0,
+  shake: 0,
+  banner: null,
+  stars: [],
+  shootingStars: []
+};
+
+try { state.hi = parseInt(localStorage.getItem('aeroInvadersHi') || '0', 10) || 0; } catch (e) {}
+
+/* ============================================================
+   4. 星屑背景
+   ============================================================ */
+function initStars() {
+  state.stars = [];
+  for (let i = 0; i < 150; i++) {
+    const z = Math.random();
+    state.stars.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      z,
+      size: 0.5 + z * 1.8,
+      speed: 5 + z * 42,
+      tw: Math.random() * TAU
+    });
+  }
+}
+initStars();
+
+function updateStars(dt) {
+  for (const s of state.stars) {
+    s.y += s.speed * dt;
+    if (s.y > H + 4) { s.y = -4; s.x = Math.random() * W; }
+  }
+  // 流れ星
+  if (Math.random() < dt * 0.35) {
+    state.shootingStars.push({
+      x: rand(0, W), y: rand(-40, H * 0.4),
+      vx: rand(-260, 260), vy: rand(140, 260),
+      life: 1.1, max: 1.1
+    });
+  }
+  for (let i = state.shootingStars.length - 1; i >= 0; i--) {
+    const s = state.shootingStars[i];
+    s.life -= dt;
+    s.x += s.vx * dt;
+    s.y += s.vy * dt;
+    if (s.life <= 0) state.shootingStars.splice(i, 1);
+  }
+}
+
+function drawStars() {
+  // 星
+  for (const s of state.stars) {
+    const tw = 0.45 + 0.55 * Math.abs(Math.sin(state.time * 1.8 + s.tw));
+    ctx.globalAlpha = tw * (0.35 + s.z * 0.65);
+    ctx.fillStyle = s.z > 0.7 ? '#dff3ff' : '#8fc4ff';
+    ctx.fillRect(s.x, s.y, s.size, s.size);
+  }
+  ctx.globalAlpha = 1;
+
+  // 流れ星
+  ctx.globalCompositeOperation = 'lighter';
+  for (const s of state.shootingStars) {
+    const a = s.life / s.max;
+    const g = ctx.createLinearGradient(s.x, s.y, s.x - s.vx * 0.12, s.y - s.vy * 0.12);
+    g.addColorStop(0, `rgba(200,240,255,${a})`);
+    g.addColorStop(1, 'rgba(120,200,255,0)');
+    ctx.strokeStyle = g;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y);
+    ctx.lineTo(s.x - s.vx * 0.12, s.y - s.vy * 0.12);
+    ctx.stroke();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/* ============================================================
+   5. サウンド(WebAudio による簡易シンセ)
+   ============================================================ */
+let actx = null;
+let soundOn = true;
+
+function ensureAudio() {
+  if (!actx) {
+    try { actx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { soundOn = false; }
+  }
+  if (actx && actx.state === 'suspended') actx.resume();
+}
+
+function beep(freq, dur, type = 'square', vol = 0.05, slideTo = null) {
+  if (!soundOn) return;
+  ensureAudio(); if (!actx) return;
+  const t = actx.currentTime;
+  const osc = actx.createOscillator();
+  const g   = actx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  if (slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(30, slideTo), t + dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(g).connect(actx.destination);
+  osc.start(t);
+  osc.stop(t + dur + 0.03);
+}
+
+function noiseBurst(dur = 0.35, vol = 0.09, cutoff = 1200) {
+  if (!soundOn) return;
+  ensureAudio(); if (!actx) return;
+  const len = Math.floor(actx.sampleRate * dur);
+  const buf = actx.createBuffer(1, len, actx.sampleRate);
+  const d   = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  const src = actx.createBufferSource(); src.buffer = buf;
+  const flt = actx.createBiquadFilter(); flt.type = 'lowpass'; flt.frequency.value = cutoff;
+  const g   = actx.createGain(); g.gain.value = vol;
+  src.connect(flt).connect(g).connect(actx.destination);
+  src.start();
+}
+
+/* ============================================================
+   6. 入力
+   ============================================================ */
+const keys = { left: false, right: false, fire: false };
+let pointerActive = false;
+let pointerX = W / 2;
+
+addEventListener('keydown', (e) => {
+  const k = e.key;
+  const lk = k.toLowerCase();
+  if (k === ' ' || k === 'ArrowLeft' || k === 'ArrowRight' ||
+      k === 'ArrowUp' || k === 'ArrowDown') e.preventDefault();
+
+  if (lk === 'arrowleft'  || lk === 'a') { keys.left = true;  pointerActive = false; }
+  if (lk === 'arrowright' || lk === 'd') { keys.right = true; pointerActive = false; }
+  if (k === ' ' || lk === 'arrowup' || lk === 'w') keys.fire = true;
+
+  if (lk === 'p') togglePause();
+  if (lk === 'm') {
+    soundOn = !soundOn;
+    setStatus(soundOn ? 'SOUND ON' : 'SOUND OFF');
+  }
+  if ((k === ' ' || k === 'Enter') &&
+      (state.mode === 'title' || state.mode === 'over')) {
+    const b = document.getElementById('ovBtn');
+    if (b && b.style.display !== 'none') b.click();
+  }
+  ensureAudio();
+});
+
+addEventListener('keyup', (e) => {
+  const k = e.key, lk = k.toLowerCase();
+  if (lk === 'arrowleft'  || lk === 'a') keys.left = false;
+  if (lk === 'arrowright' || lk === 'd') keys.right = false;
+  if (k === ' ' || lk === 'arrowup' || lk === 'w') keys.fire = false;
+});
+
+const screenEl = document.getElementById('screen');
+
+function pointerPos(e) {
+  const r = canvas.getBoundingClientRect();
+  return ((e.clientX - r.left) / r.width) * W;
+}
+
+screenEl.addEventListener('pointermove', (e) => {
+  if (e.pointerType === 'touch' && e.buttons === 0) return;
+  pointerActive = true;
+  pointerX = pointerPos(e);
+});
+screenEl.addEventListener('pointerdown', (e) => {
+  ensureAudio();
+  pointerActive = true;
+  pointerX = pointerPos(e);
+  keys.fire = true;
+  e.preventDefault();
+});
+addEventListener('pointerup', () => { keys.fire = false; });
+screenEl.addEventListener('pointerleave', () => { keys.fire = false; });
+
+/* ============================================================
+   7. UI
+   ============================================================ */
+const uiScore  = document.getElementById('uiScore');
+const uiWave   = document.getElementById('uiWave');
+const uiHi     = document.getElementById('uiHi');
+const uiLives  = document.getElementById('uiLives');
+const uiStatus = document.getElementById('uiStatus');
+const overlay  = document.getElementById('overlay');
+const ovTitle  = document.getElementById('ovTitle');
+const ovSub    = document.getElementById('ovSub');
+const ovBtn    = document.getElementById('ovBtn');
+
+function setStatus(txt) { uiStatus.innerHTML = '<b>' + txt + '</b>'; }
+
+function updateHUD(popScore) {
+  uiScore.textContent = state.score;
+  uiWave.textContent  = state.wave;
+  uiHi.textContent    = state.hi;
+
+  if (popScore) {
+    uiScore.classList.remove('pop');
+    void uiScore.offsetWidth;
+    uiScore.classList.add('pop');
+  }
+
+  uiLives.innerHTML = '';
+  for (let i = 0; i < Math.max(0, state.lives); i++) {
+    const s = document.createElement('i');
+    s.className = 'life';
+    s.style.animationDelay = (i * 0.05) + 's';
+    uiLives.appendChild(s);
+  }
+}
+
+function showOverlay(title, sub, btnText, action) {
+  ovTitle.textContent = title;
+  ovSub.innerHTML = sub;
+  if (btnText) {
+    ovBtn.style.display = '';
+    ovBtn.textContent = btnText;
+    ovBtn.onclick = () => { ensureAudio(); action(); };
+  } else {
+    ovBtn.style.display = 'none';
+  }
+  overlay.classList.add('show');
+}
+function hideOverlay() { overlay.classList.remove('show'); }
+
+function banner(text, dur = 1.7) {
+  state.banner = { text, time: 0, dur };
+}
+
+/* ============================================================
+   8. ゲームオブジェクト生成
+   ============================================================ */
+function makeBunker(cx, top) {
+  const cols = 12, rows = 7, cs = 5;
+  const cells = [];
+  for (let r = 0; r < rows; r++) {
+    const row = [];
+    for (let c = 0; c < cols; c++) {
+      let on = 1;
+      const dx = Math.abs(c - 5.5);
+      if (r >= 3 && dx < (r - 2) * 0.85) on = 0;      // アーチ状の切り欠き
+      if (r === 0 && (c === 0 || c === cols - 1)) on = 0; // 角丸
+      row.push(on);
+    }
+    cells.push(row);
+  }
+  return { x: cx - cols * cs / 2, y: top, cols, rows, cs, cells };
+}
+
+function spawnWave() {
+  state.invaders = [];
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const x = START_X + c * CELL_W;
+      const y = START_Y + r * CELL_H;
+      state.invaders.push({
+        col: c, row: r,
+        x, y, tx: x, ty: y,
+        alive: true, frame: 0
+      });
+    }
+  }
+  state.dir = 1;
+  state.stepTimer = 0.9;
+  state.stepInterval = 0.9;
+  state.efireTimer = 1.4;
+
+  state.bullets.length = 0;
+  state.ebullets.length = 0;
+  state.particles.length = 0;
+  state.rings.length = 0;
+
+  state.bunkers = [];
+  for (let i = 0; i < 4; i++) {
+    state.bunkers.push(makeBunker(W * (i + 1) / 5, H - 132));
+  }
+
+  const p = state.player;
+  p.x = W / 2;
+  p.y = H - 52;
+  p.cooldown = 0;
+  p.invuln = 1.4;
+  p.alive = true;
+
+  pointerX = p.x;
+}
+
+/* ============================================================
+   9. エフェクト
+   ============================================================ */
+function explode(x, y, color, count = 16, power = 1) {
+  for (let i = 0; i < count; i++) {
+    const a  = Math.random() * TAU;
+    const sp = rand(30, 265) * power;
+    state.particles.push({
+      x, y,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp,
+      life: rand(0.3, 0.85),
+      max: 0.85,
+      size: rand(1.1, 3.1) * power,
+      color,
+      drag: 2.3,
+      grav: 42
+    });
+  }
+  if (state.particles.length > 700)
+    state.particles.splice(0, state.particles.length - 700);
+}
+
+function ring(x, y, color, maxR = 70, dur = 0.5) {
+  state.rings.push({ x, y, r: 2, maxR, life: dur, max: dur, color });
+}
+
+/* ============================================================
+   10. 更新処理
+   ============================================================ */
+function updateParticles(dt) {
+  for (let i = state.particles.length - 1; i >= 0; i--) {
+    const p = state.particles[i];
+    p.life -= dt;
+    if (p.life <= 0) { state.particles.splice(i, 1); continue; }
+    const d = Math.min(1, p.drag * dt);
+    p.vx -= p.vx * d;
+    p.vy -= p.vy * d;
+    p.vy += p.grav * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+  }
+  for (let i = state.rings.length - 1; i >= 0; i--) {
+    const r = state.rings[i];
+    r.life -= dt;
+    if (r.life <= 0) { state.rings.splice(i, 1); continue; }
+    r.r = r.maxR * (1 - r.life / r.max);
+  }
+}
+
+function updatePlayer(dt) {
+  const p = state.player;
+  if (!p.alive) return;
+
+  if (p.cooldown > 0) p.cooldown -= dt;
+  if (p.invuln   > 0) p.invuln   -= dt;
+
+  if (pointerActive) {
+    p.x += (pointerX - p.x) * Math.min(1, dt * 15);
+  } else {
+    let ax = 0;
+    if (keys.left)  ax -= 1;
+    if (keys.right) ax += 1;
+    p.x += ax * 430 * dt;
+  }
+  p.x = clamp(p.x, 30, W - 30);
+
+  if (keys.fire && p.cooldown <= 0 && state.bullets.length < 4) {
+    state.bullets.push({ x: p.x, y: p.y - 20, vy: -780 });
+    p.cooldown = 0.2;
+    explode(p.x, p.y - 18, '#bff0ff', 5, 0.45);
+    beep(940, 0.07, 'square', 0.035, 260);
+  }
+}
+
+function updateBullets(dt) {
+  const p = state.player;
+
+  // 自弾
+  for (let i = state.bullets.length - 1; i >= 0; i--) {
+    const b = state.bullets[i];
+    b.y += b.vy * dt;
+
+    if (b.y < -24) { state.bullets.splice(i, 1); continue; }
+
+    // バンカー
+    if (hitBunker(b.x, b.y)) {
+      explode(b.x, b.y, '#9fe8ff', 8, 0.55);
+      state.bullets.splice(i, 1);
+      continue;
+    }
+
+    // 敵
+    let hit = false;
+    for (const inv of state.invaders) {
+      if (!inv.alive) continue;
+      if (Math.abs(inv.x - b.x) < 17 && Math.abs(inv.y - b.y) < 17) {
+        inv.alive = false;
+        hit = true;
+        const pts = ROW_POINTS[inv.row] * (1 + (state.wave - 1) * 0.15) | 0;
+        state.score += pts;
+        if (state.score > state.hi) {
+          state.hi = state.score;
+          try { localStorage.setItem('aeroInvadersHi', String(state.hi)); } catch (e) {}
+        }
+        explode(inv.x, inv.y, ROW_COLORS[inv.row], 18, 1);
+        ring(inv.x, inv.y, ROW_COLORS[inv.row], 46, 0.42);
+        noiseBurst(0.18, 0.055, 1600);
+        updateHUD(true);
+        break;
+      }
+    }
+    if (hit) { state.bullets.splice(i, 1); continue; }
+  }
+
+  // 敵弾
+  for (let i = state.ebullets.length - 1; i >= 0; i--) {
+    const b = state.ebullets[i];
+    b.y += b.vy * dt;
+
+    if (b.y > H + 20) { state.ebullets.splice(i, 1); continue; }
+
+    if (hitBunker(b.x, b.y)) {
+      explode(b.x, b.y, '#ffb3d0', 8, 0.55);
+      state.ebullets.splice(i, 1);
+      continue;
+    }
+
+    if (p.alive && p.invuln <= 0 &&
+        Math.abs(p.x - b.x) < 20 && Math.abs(p.y - b.y) < 20) {
+      state.ebullets.splice(i, 1);
+      hitPlayer();
+    }
+  }
+}
+
+function hitBunker(x, y) {
+  for (const bk of state.bunkers) {
+    const bw = bk.cols * bk.cs, bh = bk.rows * bk.cs;
+    if (x < bk.x || x > bk.x + bw || y < bk.y || y > bk.y + bh) continue;
+    const c = Math.floor((x - bk.x) / bk.cs);
+    const r = Math.floor((y - bk.y) / bk.cs);
+    if (bk.cells[r] && bk.cells[r][c]) {
+      for (let rr = r - 1; rr <= r + 1; rr++) {
+        for (let cc = c - 1; cc <= c + 1; cc++) {
+          if (bk.cells[rr] && bk.cells[rr][cc] !== undefined && Math.random() < 0.88)
+            bk.cells[rr][cc] = 0;
+        }
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+function erodeBunkerAt(x, y) {
+  for (const bk of state.bunkers) {
+    if (x < bk.x - 20 || x > bk.x + bk.cols * bk.cs + 20) continue;
+    if (y < bk.y - 20 || y > bk.y + bk.rows * bk.cs + 20) continue;
+    for (let r = 0; r < bk.rows; r++) {
+      for (let c = 0; c < bk.cols; c++) {
+        if (!bk.cells[r][c]) continue;
+        const cx = bk.x + c * bk.cs + bk.cs / 2;
+        const cy = bk.y + r * bk.cs + bk.cs / 2;
+        if (Math.abs(cx - x) < 18 && Math.abs(cy - y) < 18) bk.cells[r][c] = 0;
+      }
+    }
+  }
+}
+
+function updateInvaders(dt) {
+  // なめらかに移動
+  const k = Math.min(1, dt * 16);
+  for (const inv of state.invaders) {
+    if (!inv.alive) continue;
+    inv.x += (inv.tx - inv.x) * k;
+    inv.y += (inv.ty - inv.y) * k;
+  }
+
+  if (state.mode !== 'playing') return;
+
+  state.stepTimer -= dt;
+  if (state.stepTimer <= 0) stepInvaders();
+
+  // プレイヤーとの衝突
+  const p = state.player;
+  if (p.alive) {
+    for (const inv of state.invaders) {
+      if (!inv.alive) continue;
+      if (Math.abs(inv.x - p.x) < 24 && Math.abs(inv.y - p.y) < 22) {
+        hitPlayer(true);
+        break;
+      }
+    }
+  }
+}
+
+function stepInvaders() {
+  const alive = state.invaders.filter(i => i.alive);
+  if (!alive.length) return;
+
+  let minX = Infinity, maxX = -Infinity;
+  for (const i of alive) {
+    if (i.tx < minX) minX = i.tx;
+    if (i.tx > maxX) maxX = i.tx;
+  }
+
+  const dx = 16 * state.dir;
+  if (maxX + dx > W - 42 || minX + dx < 42) {
+    state.dir *= -1;
+    for (const i of alive) i.ty += 24;
+    beep(150, 0.07, 'square', 0.028, 100);
+    for (const i of alive) erodeBunkerAt(i.tx, i.ty);
+  } else {
+    for (const i of alive) i.tx += dx;
+  }
+
+  for (const i of alive) i.frame ^= 1;
+
+  const ratio = alive.length / (COLS * ROWS);
+  state.stepInterval = Math.max(0.085,
+    (0.15 + 0.62 * ratio) / (1 + (state.wave - 1) * 0.16));
+  state.stepTimer = state.stepInterval;
+
+  // 侵略完了チェック
+  let maxY = -Infinity;
+  for (const i of alive) if (i.ty > maxY) maxY = i.ty;
+  if (maxY > state.player.y - 26) {
+    gameOver();
+    return;
+  }
+
+  // 足音的なブリップ
+  beep(190 + ratio * 150, 0.045, 'square', 0.014);
+}
+
+function updateEnemyFire(dt) {
+  const alive = state.invaders.filter(i => i.alive);
+  if (!alive.length) return;
+  if (state.ebullets.length > 14) return;
+
+  state.efireTimer -= dt;
+  if (state.efireTimer <= 0) {
+    // 各列の最下段を求める
+    const bottom = {};
+    for (const i of alive) {
+      if (!bottom[i.col] || i.y > bottom[i.col].y) bottom[i.col] = i;
+    }
+    const list = Object.values(bottom);
+    const src  = list[(Math.random() * list.length) | 0];
+    if (src) {
+      state.ebullets.push({ x: src.x, y: src.y + 18, vy: 210 + state.wave * 16 });
+      beep(420, 0.09, 'sawtooth', 0.028, 180);
+    }
+    state.efireTimer = rand(0.42, 1.25) / (1 + (state.wave - 1) * 0.16);
+  }
+}
+
+function checkWaveClear() {
+  if (state.mode !== 'playing') return;
+  if (!state.invaders.length) return;
+  if (state.invaders.some(i => i.alive)) return;
+
+  state.mode = 'waveclear';
+  state.waveTimer = 2.1;
+  banner('WAVE CLEAR', 1.7);
+  setStatus('WAVE CLEAR');
+  beep(660, 0.12, 'triangle', 0.05);
+  setTimeout(() => beep(880, 0.16, 'triangle', 0.05), 110);
+  setTimeout(() => beep(1180, 0.22, 'triangle', 0.05), 230);
+}
+
+function hitPlayer(instant) {
+  const p = state.player;
+  if (!p.alive) return;
+  if (!instant && p.invuln > 0) return;
+
+  state.lives--;
+  explode(p.x, p.y, '#9fe8ff', 30, 1.5);
+  ring(p.x, p.y, '#c8f2ff', 110, 0.6);
+  state.shake = 17;
+  noiseBurst(0.45, 0.13, 900);
+  updateHUD();
+
+  if (state.lives <= 0) {
+    p.alive = false;
+    gameOver();
+  } else {
+    p.invuln = 2.3;
+    p.x = W / 2;
+    pointerX = p.x;
+    state.ebullets.length = 0;
+    setStatus('LIFE -1');
+  }
+}
+
+function gameOver() {
+  if (state.mode === 'over') return;
+  state.mode = 'over';
+  state.shake = 24;
+  explode(state.player.x, state.player.y, '#ff9a6a', 40, 2);
+  ring(state.player.x, state.player.y, '#ffb08a', 170, 0.9);
+  noiseBurst(0.8, 0.16, 700);
+  beep(300, 0.5, 'sawtooth', 0.06, 60);
+  setStatus('GAME OVER');
+
+  if (state.score > state.hi) {
+    state.hi = state.score;
+    try { localStorage.setItem('aeroInvadersHi', String(state.hi)); } catch (e) {}
+  }
+  updateHUD();
+
+  setTimeout(() => {
+    showOverlay(
+      'GAME OVER',
+      `SCORE <b style="color:#fff">${state.score}</b>　／　HI <b style="color:#fff">${state.hi}</b><br>` +
+      `<kbd>SPACE</kbd> でリトライ`,
+      'RETRY',
+      startGame
+    );
+  }, 750);
+}
+
+/* ============================================================
+   11. ゲーム制御
+   ============================================================ */
+function startGame() {
+  ensureAudio();
+  state.score = 0;
+  state.lives = 3;
+  state.wave  = 1;
+  state.player.alive = true;
+  state.shake = 0;
+  spawnWave();
+  state.mode = 'playing';
+  hideOverlay();
+  banner('WAVE 1', 1.6);
+  setStatus('PLAYING');
+  updateHUD();
+}
+
+function nextWave() {
+  state.wave++;
+  spawnWave();
+  state.mode = 'playing';
+  banner('WAVE ' + state.wave, 1.6);
+  setStatus('PLAYING');
+  updateHUD();
+}
+
+function togglePause() {
+  if (state.mode === 'playing') {
+    state.mode = 'paused';
+    setStatus('PAUSED');
+    showOverlay('PAUSED', 'ゲームを再開しますか?', 'RESUME', () => {
+      state.mode = 'playing';
+      hideOverlay();
+      setStatus('PLAYING');
+    });
+  } else if (state.mode === 'paused') {
+    state.mode = 'playing';
+    hideOverlay();
+    setStatus('PLAYING');
+  }
+}
+
+/* ============================================================
+   12. 描画
+   ============================================================ */
+function drawBunkers() {
+  for (const bk of state.bunkers) {
+    const cs = bk.cs;
+    for (let r = 0; r < bk.rows; r++) {
+      for (let c = 0; c < bk.cols; c++) {
+        if (!bk.cells[r][c]) continue;
+        const x = bk.x + c * cs;
+        const y = bk.y + r * cs;
+        ctx.fillStyle = (r < 2) ? 'rgba(150,238,255,0.95)' : 'rgba(96,205,245,0.9)';
+        ctx.fillRect(x, y, cs - 0.6, cs - 0.6);
+      }
+    }
+    // 淡いグロー
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.09;
+    ctx.fillStyle = '#7fe4ff';
+    ctx.fillRect(bk.x - 4, bk.y - 4, bk.cols * cs + 8, bk.rows * cs + 8);
+    ctx.restore();
+  }
+}
+
+function drawInvaders() {
+  const bob = Math.sin(state.time * 3.1) * 1.6;
+  for (const inv of state.invaders) {
+    if (!inv.alive) continue;
+    const spr = spriteFor(inv.row, inv.frame);
+    ctx.drawImage(spr, inv.x - SPR_SIZE / 2, inv.y - SPR_SIZE / 2 + bob);
+  }
+}
+
+function drawBullets() {
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (const b of state.bullets) {
+    const g = ctx.createLinearGradient(0, b.y - 22, 0, b.y + 8);
+    g.addColorStop(0, 'rgba(120,220,255,0)');
+    g.addColorStop(0.5, 'rgba(160,235,255,0.85)');
+    g.addColorStop(1, 'rgba(255,255,255,1)');
+    ctx.fillStyle = g;
+    ctx.fillRect(b.x - 1.8, b.y - 22, 3.6, 30);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#8fe4ff';
+    ctx.shadowBlur = 14;
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y, 3.2, 6, 0, 0, TAU);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+  ctx.restore();
+}
+
+function drawEnemyBullets() {
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (const b of state.ebullets) {
+    const g = ctx.createLinearGradient(0, b.y - 20, 0, b.y + 6);
+    g.addColorStop(0, 'rgba(255,120,200,0)');
+    g.addColorStop(1, 'rgba(255,180,230,0.9)');
+    ctx.fillStyle = g;
+    ctx.fillRect(b.x - 1.6, b.y - 20, 3.2, 26);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#ff77cc';
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, 3.4, 0, TAU);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+  ctx.restore();
+}
+
+function drawPlayer() {
+  const p = state.player;
+  if (!p || !p.alive) return;
+  if (p.invuln > 0 && Math.floor(state.time * 22) % 2 === 0) return;
+
+  ctx.save();
+  ctx.translate(p.x, p.y);
+
+  // エンジン光
+  ctx.globalCompositeOperation = 'lighter';
+  const fl = 24 + Math.sin(state.time * 32) * 5;
+  const eg = ctx.createRadialGradient(0, 14, 0, 0, 14, fl);
+  eg.addColorStop(0, 'rgba(150,235,255,0.85)');
+  eg.addColorStop(0.4, 'rgba(80,180,255,0.35)');
+  eg.addColorStop(1, 'rgba(40,110,255,0)');
+  ctx.fillStyle = eg;
+  ctx.beginPath(); ctx.arc(0, 14, fl, 0, TAU); ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+
+  // 機体
+  ctx.beginPath();
+  ctx.moveTo(0, -19);
+  ctx.lineTo(7, -5);
+  ctx.lineTo(22, 5);
+  ctx.lineTo(22, 12);
+  ctx.lineTo(8, 10);
+  ctx.lineTo(4, 16);
+  ctx.lineTo(-4, 16);
+  ctx.lineTo(-8, 10);
+  ctx.lineTo(-22, 12);
+  ctx.lineTo(-22, 5);
+  ctx.lineTo(-7, -5);
+  ctx.closePath();
+
+  const bg = ctx.createLinearGradient(0, -19, 0, 16);
+  bg.addColorStop(0, '#f2fdff');
+  bg.addColorStop(0.42, '#7fd0ff');
+  bg.addColorStop(1, '#124f92');
+  ctx.fillStyle = bg;
+  ctx.shadowColor = '#5cd0ff';
+  ctx.shadowBlur = 20;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.lineWidth = 1.1;
+  ctx.stroke();
+
+  // キャノピー
+  ctx.beginPath();
+  ctx.ellipse(0, -5, 4.6, 7, 0, 0, TAU);
+  const cg = ctx.createLinearGradient(0, -12, 0, 2);
+  cg.addColorStop(0, '#ffffff');
+  cg.addColorStop(0.5, '#9fe8ff');
+  cg.addColorStop(1, '#1b6fc0');
+  ctx.fillStyle = cg;
+  ctx.fill();
+
+  // 翼のハイライト
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.fillStyle = 'rgba(160,235,255,0.5)';
+  ctx.fillRect(-21, 7, 40, 1.4);
+  ctx.globalCompositeOperation = 'source-over';
+
+  ctx.restore();
+}
+
+function drawParticles() {
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (const p of state.particles) {
+    const a = clamp(p.life / p.max, 0, 1);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * a + 0.4, 0, TAU);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  // リング
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (const r of state.rings) {
+    const a = clamp(r.life / r.max, 0, 1);
+    ctx.globalAlpha = a * 0.85;
+    ctx.strokeStyle = r.color;
+    ctx.lineWidth = 1.5 + 4 * (1 - a);
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, r.r, 0, TAU);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function drawBanner() {
+  const b = state.banner;
+  if (!b) return;
+  const t = b.time / b.dur;
+  let a = 1;
+  if (t < 0.16) a = t / 0.16;
+  else if (t > 0.74) a = (1 - t) / 0.26;
+  a = clamp(a, 0, 1);
+
+  const scale = 1 + (1 - Math.min(1, t * 4)) * 0.28;
+
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.translate(W / 2, H * 0.31);
+  ctx.scale(scale, scale);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '700 54px "Segoe UI", "Yu Gothic UI", Meiryo, sans-serif';
+
+  const g = ctx.createLinearGradient(0, -32, 0, 32);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(0.5, '#b0e8ff');
+  g.addColorStop(1, '#3f9fff');
+  ctx.shadowColor = 'rgba(90,200,255,0.95)';
+  ctx.shadowBlur = 34;
+  ctx.fillStyle = g;
+  ctx.fillText(b.text, 0, 0);
+  ctx.restore();
+}
+
+function drawDangerLine() {
+  const y = H - 14;
+  const pulse = 0.35 + 0.3 * Math.sin(state.time * 2.4);
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const g = ctx.createLinearGradient(0, y - 26, 0, y);
+  g.addColorStop(0, 'rgba(80,180,255,0)');
+  g.addColorStop(1, `rgba(90,200,255,${pulse * 0.5})`);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, y - 26, W, 26);
+
+  ctx.strokeStyle = `rgba(150,225,255,${pulse})`;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, y);
+  ctx.lineTo(W, y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function render() {
+  ctx.clearRect(0, 0, W, H);
+
+  drawStars();
+
+  ctx.save();
+  if (state.shake > 0.5) {
+    const s = state.shake;
+    ctx.translate((Math.random() - 0.5) * s, (Math.random() - 0.5) * s);
+  }
+
+  drawBunkers();
+  drawInvaders();
+  drawBullets();
+  drawEnemyBullets();
+  drawPlayer();
+  drawRingsSafe();
+  drawParticles();
+
+  ctx.restore();
+
+  drawDangerLine();
+  drawBanner();
+}
+
+function drawRingsSafe() { /* drawParticles 内で描画済み */ }
+
+/* ============================================================
+   13. メインループ
+   ============================================================ */
+let last = performance.now();
+
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+
+  state.time += dt;
+  updateStars(dt);
+  updateParticles(dt);
+
+  if (state.shake > 0) state.shake = Math.max(0, state.shake - dt * 34);
+  if (state.banner) {
+    state.banner.time += dt;
+    if (state.banner.time > state.banner.dur) state.banner = null;
+  }
+
+  if (state.mode === 'playing' || state.mode === 'waveclear') {
+    updatePlayer(dt);
+    updateBullets(dt);
+    updateInvaders(dt);
+    if (state.mode === 'playing') {
+      updateEnemyFire(dt);
+      checkWaveClear();
+    }
+  }
+
+  if (state.mode === 'waveclear') {
+    state.waveTimer -= dt;
+    if (state.waveTimer <= 0) nextWave();
+  }
+
+  render();
+  requestAnimationFrame(loop);
+}
+
+/* ============================================================
+   14. 背景のボケ光生成
+   ============================================================ */
+(function buildBokeh() {
+  const box = document.getElementById('bokeh');
+  for (let i = 0; i < 26; i++) {
+    const el = document.createElement('i');
+    const size = rand(8, 46);
+    el.style.width  = size + 'px';
+    el.style.height = size + 'px';
+    el.style.left   = rand(0, 100) + 'vw';
+    el.style.setProperty('--dx', rand(-90, 90) + 'px');
+    el.style.animationDuration = rand(16, 40) + 's';
+    el.style.animationDelay = (-rand(0, 40)) + 's';
+    box.appendChild(el);
+  }
+})();
+
+/* ============================================================
+   15. ウィンドウ操作
+   ============================================================ */
+const windowEl  = document.getElementById('windowEl');
+const restoreBtn = document.getElementById('restoreBtn');
+
+document.getElementById('btnMin').addEventListener('click', () => {
+  windowEl.classList.add('minimized');
+  setTimeout(() => restoreBtn.classList.add('show'), 260);
+  if (state.mode === 'playing') togglePause();
+});
+restoreBtn.addEventListener('click', () => {
+  windowEl.classList.remove('minimized');
+  windowEl.classList.add('restoring');
+  setTimeout(() => windowEl.classList.remove('restoring'), 580);
+  restoreBtn.classList.remove('show');
+});
+document.getElementById('btnMax').addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    (document.documentElement.requestFullscreen || (() => {})).call(document.documentElement);
+  } else {
+    (document.exitFullscreen || (() => {})).call(document);
+  }
+});
+document.getElementById('btnClose').addEventListener('click', () => {
+  windowEl.classList.add('minimized');
+  setTimeout(() => restoreBtn.classList.add('show'), 260);
+  if (state.mode === 'playing') togglePause();
+});
+
+/* ============================================================
+   16. 起動
+   ============================================================ */
+state.player = {
+  x: W / 2, y: H - 52,
+  w: 36, h: 32,
+  cooldown: 0, invuln: 0, alive: true
+};
+pointerX = state.player.x;
+
+updateHUD();
+setStatus('READY');
+
+showOverlay(
+  'AERO INVADERS',
+  '<kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> で移動　<kbd>SPACE</kbd> で発射<br>' +
+  'マウス／タッチでも操作できます　<kbd>P</kbd> 一時停止',
+  'START',
+  startGame
+);
+
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
