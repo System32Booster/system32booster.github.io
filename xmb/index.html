@@ -30,8 +30,11 @@
     position:fixed; inset:0; z-index:10;
     transition: opacity .9s ease, filter .9s ease;
   }
-  body.overlay-on #stage{ opacity:0; filter:blur(10px); pointer-events:none; }
-  body.overlay-on .hud, body.overlay-on .hint{ opacity:0 !important; }
+  body.overlay-on #stage, body.game-on #stage{
+    opacity:0; filter:blur(10px); pointer-events:none;
+  }
+  body.overlay-on .hud, body.overlay-on .hint,
+  body.game-on .hud, body.game-on .hint{ opacity:0 !important; }
   .cat{
     position:absolute; left:50%; top:50%;
     width:64px; height:64px;
@@ -77,7 +80,12 @@
     flex:0 0 auto; width:44px; height:44px;
     display:grid; place-items:center;
   }
-  .item .item-icon svg{ width:34px; height:34px; display:block; }
+  .item .item-icon svg,
+  .item .item-icon img{
+    width:34px; height:34px; display:block;
+    object-fit:contain;
+    border-radius:4px;
+  }
   .item .item-label{
     display:flex; flex-direction:column; gap:1px; line-height:1.2;
     text-shadow:0 1px 8px rgba(0,0,0,.9);
@@ -106,7 +114,8 @@
     color:#ffffff;
     filter:drop-shadow(0 0 9px rgba(150,215,255,.55));
   }
-  .item.sel .item-icon svg{
+  .item.sel .item-icon svg,
+  .item.sel .item-icon img{
     filter:drop-shadow(0 0 8px rgba(140,210,255,.9));
   }
   .submenu{
@@ -136,7 +145,12 @@
     flex:0 0 auto; width:26px; height:26px; margin-top:1px;
     display:grid; place-items:center;
   }
-  .sub-item .sub-icon svg{ width:22px; height:22px; display:block; }
+  .sub-item .sub-icon svg,
+  .sub-item .sub-icon img{
+    width:22px; height:22px; display:block;
+    object-fit:contain;
+    border-radius:3px;
+  }
   .sub-item .sub-body{ flex:1; min-width:0; display:flex; flex-direction:column; }
   .sub-top{
     display:flex; align-items:baseline;
@@ -165,7 +179,10 @@
     transform:translateX(4px);
     box-shadow:-2px 0 0 0 rgba(150,215,255,.9);
   }
-  .sub-item.sel .sub-icon{ filter:drop-shadow(0 0 6px rgba(150,215,255,.9)); }
+  .sub-item.sel .sub-icon svg,
+  .sub-item.sel .sub-icon img{
+    filter:drop-shadow(0 0 6px rgba(150,215,255,.9));
+  }
   .sub-item.sel .sub-value{ color:#e0ecf8; }
   .sub-item.sel .sub-desc{ opacity:1; max-height:120px; margin-top:5px; }
   .hud{
@@ -278,6 +295,8 @@
     border:1.5px solid currentColor;
     font-size:11px; line-height:1;
   }
+
+  /* ---------- splash ---------- */
   .splash{
     position:fixed; inset:0; z-index:1000; overflow:hidden;
     opacity:1; transition:opacity 1.1s ease; pointer-events:none;
@@ -400,6 +419,129 @@
   }
   @keyframes hint-fade-in{ 0%{opacity:0;} 100%{opacity:.6;} }
   @keyframes hint-pulse{ 0%,100%{opacity:.6;} 50%{opacity:.95;} }
+
+  /* ---------- game screen ---------- */
+  .game-screen{
+    position:fixed; inset:0; z-index:250;
+    display:grid; place-items:center;
+    background:
+      radial-gradient(ellipse 80% 70% at 50% 45%,
+        rgba(12,32,58,.92) 0%,
+        rgba(4,10,22,.97) 60%,
+        rgba(2,5,12,.99) 100%);
+    backdrop-filter: blur(14px) brightness(0.6);
+    -webkit-backdrop-filter: blur(14px) brightness(0.6);
+    opacity:0; pointer-events:none;
+    transition:opacity .42s ease;
+  }
+  body.game-on .game-screen{ opacity:1; pointer-events:auto; }
+
+  .game-frame{
+    min-width: 520px;
+    padding: 22px 32px 26px;
+    border-radius: 12px;
+    background: linear-gradient(180deg,
+      rgba(28,58,100,.6),
+      rgba(8,20,40,.92));
+    border: 1px solid rgba(130,195,255,.32);
+    box-shadow:
+      0 0 70px rgba(50,130,220,.35),
+      inset 0 0 50px rgba(70,150,255,.08);
+    transform:scale(.94);
+    transition:transform .4s cubic-bezier(.22,.61,.36,1);
+  }
+  body.game-on .game-frame{ transform:scale(1); }
+
+  .game-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding-bottom:12px;
+    border-bottom:1px solid rgba(130,195,255,.2);
+    margin-bottom:16px;
+  }
+  .game-title{
+    font-size:16px;
+    letter-spacing:.18em;
+    color:#cfe6ff;
+    text-shadow:0 0 14px rgba(120,190,255,.5);
+  }
+  .game-hint{
+    font-size:11px;
+    letter-spacing:.16em;
+    color:#7f9ab5;
+  }
+  .game-body{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+  }
+  .game-status{
+    font-size:14px;
+    letter-spacing:.1em;
+    color:#e6f2ff;
+    text-shadow:0 0 12px rgba(120,190,255,.4);
+    text-align:center;
+    min-height:1.4em;
+  }
+  .game-hint-line{
+    font-size:11px;
+    letter-spacing:.14em;
+    color:#8ba8c5;
+    text-align:center;
+  }
+
+  /* tic-tac-toe */
+  .ttt-board{
+    display:grid;
+    grid-template-columns:repeat(3, 96px);
+    grid-template-rows:repeat(3, 96px);
+    gap:6px;
+    margin: 6px 0;
+  }
+  .ttt-cell{
+    display:grid; place-items:center;
+    font-size:56px;
+    font-weight:700;
+    color:#cfe6ff;
+    background:rgba(30,60,100,.42);
+    border:1px solid rgba(130,195,255,.28);
+    border-radius:8px;
+    cursor:pointer;
+    transition: background .18s ease, border-color .18s ease, box-shadow .18s ease;
+    text-shadow:0 0 18px rgba(150,215,255,.55);
+    line-height:1;
+  }
+  .ttt-cell:hover{
+    background:rgba(60,110,170,.55);
+    border-color:rgba(160,215,255,.55);
+  }
+  .ttt-cell.filled{ cursor:default; }
+  .ttt-cell.filled:hover{ background:rgba(30,60,100,.42); border-color:rgba(130,195,255,.28); }
+  .ttt-cell.o{ color:#7ec8ff; text-shadow:0 0 22px rgba(120,200,255,.9); }
+  .ttt-cell.x{ color:#ffb970; text-shadow:0 0 22px rgba(255,180,100,.9); }
+  .ttt-cell.win{
+    background:rgba(120,220,140,.25);
+    border-color:rgba(160,255,180,.7);
+    box-shadow:0 0 24px rgba(140,240,170,.55);
+  }
+  .ttt-cell.cursor{
+    outline:2px solid rgba(200,230,255,.9);
+    outline-offset:-2px;
+  }
+
+  /* snake */
+  .snake-canvas{
+    display:block;
+    border-radius:8px;
+    background:rgba(8,20,40,.9);
+    border:1px solid rgba(130,195,255,.3);
+    box-shadow:inset 0 0 40px rgba(50,120,200,.15);
+    max-width:80vw;
+    max-height:55vh;
+  }
+
   @media (max-width:760px){
     .clock{ font-size:22px; }
     .hint{ font-size:9px; letter-spacing:.1em; }
@@ -416,6 +558,9 @@
     .sub-item{ min-width:0; max-width:70vw; }
     .splash-logo{ right: 5%; }
     .splash-warning{ width: 84vw; }
+    .game-frame{ min-width:0; width:88vw; padding:16px 18px; }
+    .ttt-board{ grid-template-columns:repeat(3, 72px); grid-template-rows:repeat(3, 72px); }
+    .ttt-cell{ font-size:42px; }
   }
 </style>
 </head>
@@ -445,30 +590,36 @@
   <div class="overlay-footer" id="ovFooter"></div>
 </div>
 
+<!-- ============================================================
+     ゲーム画面
+     ============================================================ -->
+<div class="game-screen" id="gameScreen">
+  <div class="game-frame">
+    <div class="game-header">
+      <span class="game-title" id="gameTitle"></span>
+      <span class="game-hint">ESC で XMB に戻る</span>
+    </div>
+    <div class="game-body" id="gameBody"></div>
+  </div>
+</div>
+
 <div class="splash" id="splash">
   <div class="splash-logo">
     <div class="ps-symbol">
       <svg viewBox="0 0 200 260" fill="none">
         <path d="
-          M104 8
-          C104 8 78 2 58 14
-          C40 25 34 46 42 64
-          C48 78 64 85 86 88
-          L86 240 L114 240 L114 90
-          C136 88 158 78 168 60
-          C180 38 172 16 150 8
+          M104 8 C104 8 78 2 58 14 C40 25 34 46 42 64
+          C48 78 64 85 86 88 L86 240 L114 240 L114 90
+          C136 88 158 78 168 60 C180 38 172 16 150 8
           C132 2 116 4 104 8 Z
         " fill="currentColor"/>
         <path d="
-          M86 58 C86 58 88 36 106 32
-          C122 29 128 46 120 62
+          M86 58 C86 58 88 36 106 32 C122 29 128 46 120 62
           C112 78 96 80 86 78 Z
         " fill="rgba(12,26,44,0.9)"/>
         <path d="
-          M8 168 C8 168 24 208 74 218
-          C120 227 154 214 160 190
-          C166 168 142 152 108 144
-          C74 136 42 130 36 112
+          M8 168 C8 168 24 208 74 218 C120 227 154 214 160 190
+          C166 168 142 152 108 144 C74 136 42 130 36 112
           C30 96 42 78 66 74
         " stroke="currentColor" stroke-width="15" stroke-linecap="round" fill="none"/>
       </svg>
@@ -478,12 +629,10 @@
       <div class="ps3-sub">PlayStation®3</div>
     </div>
   </div>
-
   <div class="splash-warning">
     <h2>光感受性発作について</h2>
     <p>てんかんの既往症や発作の経験のある方は、使用する前に必ず医師に相談してください。ある種の映像パターンによっては過去に症状を経験したことがない方でも発作が誘発されてしまう場合があります。取扱説明書をよくお読みの上、正しくお使いください。</p>
   </div>
-
   <div class="splash-skip-hint">CLICK / ANY KEY でスキップ</div>
 </div>
 
@@ -494,31 +643,11 @@
 <script>
 /* ============================================================
    ★ 音声カスタマイズ設定
-   ------------------------------------------------------------
-   ファイルの場所は「このHTMLファイルからの相対パス」で指定してください。
-   例:
-     const BOOT_SOUND_URL = './sounds/boot.mp3';
-     const SFX_URLS = {
-       move: './sounds/move.mp3',
-       ok:   './sounds/ok.mp3',
-       back: './sounds/back.mp3',
-       edge: './sounds/edge.mp3'
-     };
-
-   ※ file:// でHTMLを直接開いた場合、ブラウザによっては音声が
-      読み込めません。ローカルサーバー経由で開くことを推奨します。
-      例: python -m http.server 8000
    ============================================================ */
 const BOOT_SOUND_URL = './xmb/sounds/boot.wav';
-
 const SFX_URLS = {
-  move: './xmb/sounds/snd_option.wav',
-  ok:   './xmb/sounds/snd_option.wav',
-  back: './xmb/sounds/snd_cancel.wav',
-  edge: './xmb/sounds/snd_option.wav'
+  move: './xmb/sounds/snd_option.wav', ok: './xmb/sounds/snd_option.wav', back: './xmb/sounds/snd_cancel.wav', edge: './xmb/sounds/snd_option.wav'
 };
-
-/* デバッグログをコンソールに出力するか */
 const DEBUG_AUDIO = true;
 
 const BOOT_TIMING = {
@@ -526,22 +655,42 @@ const BOOT_TIMING = {
   warningHold: 4800, fadeOut: 1200
 };
 
+/* ============================================================
+   ★ 画像アイコンのデモ用データURI
+   ------------------------------------------------------------
+   実際の画像ファイルを使う場合、DATA 内の iconUrl に
+   './icons/xxx.png' のような相対パスを指定してください。
+   拡張子は .png / .jpg / .gif / .svg / .webp などが使えます。
+   ============================================================ */
+const DEMO_IMG_PSSTORE =
+  "data:image/svg+xml;utf8," +
+  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>" +
+  "<defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'>" +
+  "<stop offset='0' stop-color='%234a8ae8'/><stop offset='1' stop-color='%231d3f8a'/>" +
+  "</linearGradient></defs>" +
+  "<rect width='24' height='24' rx='4' fill='url(%23g)'/>" +
+  "<text x='12' y='16' text-anchor='middle' fill='white' " +
+  "font-family='Arial,sans-serif' font-size='9' font-weight='700'>PS</text>" +
+  "</svg>";
+
+const DEMO_IMG_WHATSNEW =
+  "data:image/svg+xml;utf8," +
+  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>" +
+  "<defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'>" +
+  "<stop offset='0' stop-color='%23ffb14a'/><stop offset='1' stop-color='%23e8611a'/>" +
+  "</linearGradient></defs>" +
+  "<rect width='24' height='24' rx='4' fill='url(%23g)'/>" +
+  "<circle cx='12' cy='12' r='6' fill='none' stroke='white' stroke-width='1.8'/>" +
+  "<circle cx='12' cy='12' r='2.4' fill='white'/>" +
+  "</svg>";
+
 /* =========================================================
-   オーディオ デバッグヘルパー
+   オーディオ デバッグ
    ========================================================= */
-function alog(...args){
-  if (DEBUG_AUDIO) console.log('%c[XMB Audio]', 'color:#4af', ...args);
-}
-function awarn(...args){
-  console.warn('%c[XMB Audio]', 'color:#fa4', ...args);
-}
-function aerr(...args){
-  console.error('%c[XMB Audio]', 'color:#f44', ...args);
-}
-function resolveUrl(u){
-  try { return new URL(u, location.href).href; }
-  catch(e){ return u; }
-}
+function alog(...args){ if (DEBUG_AUDIO) console.log('%c[XMB Audio]', 'color:#4af', ...args); }
+function awarn(...args){ console.warn('%c[XMB Audio]', 'color:#fa4', ...args); }
+function aerr(...args){ console.error('%c[XMB Audio]', 'color:#f44', ...args); }
+function resolveUrl(u){ try { return new URL(u, location.href).href; } catch(e){ return u; } }
 
 /* =========================================================
    アイコン
@@ -596,6 +745,13 @@ const ICONS = {
     '<path d="M3.6 7.2L5.4 4h13.2l1.8 3.2"/><path d="M3.6 7.2h16.8v11.6a1.2 1.2 0 0 1-1.2 1.2H4.8a1.2 1.2 0 0 1-1.2-1.2z"/><path d="M9.6 12.4h4.8"/>',
   streaming:
     '<rect x="3" y="5.4" width="18" height="13.2" rx="2"/><path d="M9.6 10.2l4.8 3-4.8 3z" fill="currentColor" stroke="none"/>',
+  /* ゲーム用 */
+  gameXX:
+    '<rect x="2.6" y="2.6" width="18.8" height="18.8" rx="2.2"/>' +
+    '<path d="M2.6 9.5h18.8M2.6 14.5h18.8M9.5 2.6v18.8M14.5 2.6v18.8"/>',
+  snakeGame:
+    '<path d="M4 18c1.8 0 3-1.6 3-3.6S8.2 11 10 11s3 1.6 3 3.6S14.2 18 16 18s3-1.6 3-3.6V6"/>' +
+    '<circle cx="19" cy="5" r="1.2" fill="currentColor" stroke="none"/>',
   userSmile:
     '<circle cx="12" cy="12" r="9"/><circle cx="9" cy="10.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="10.5" r="1.1" fill="currentColor" stroke="none"/><path d="M8.5 15c1 1.4 2.3 2 3.5 2s2.5-.6 3.5-2"/>'
 };
@@ -606,8 +762,35 @@ function svgIcon(name){
             stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 }
 
+/* ============================================================
+   アイコン描画（SVG or 画像）
+   ------------------------------------------------------------
+   item.iconUrl があればそれを <img> で表示し、
+   読み込み失敗時は item.i の SVG へ自動フォールバック。
+   ============================================================ */
+function iconMarkup(it, imgCls){
+  if (it.iconUrl){
+    const fallback = it.i || 'disc';
+    return `<img class="${imgCls}" src="${it.iconUrl}" data-fallback="${fallback}" alt="">`;
+  }
+  return svgIcon(it.i);
+}
+
+function attachIconFallbacks(root){
+  root.querySelectorAll('img[data-fallback]').forEach(img => {
+    if (img.dataset.bound) return;
+    img.dataset.bound = '1';
+    img.addEventListener('error', () => {
+      const svg = svgIcon(img.dataset.fallback);
+      const wrap = document.createElement('span');
+      wrap.innerHTML = svg;
+      img.replaceWith(wrap.firstElementChild);
+    });
+  });
+}
+
 /* =========================================================
-   XMB データ（PS3 準拠）
+   XMB データ
    ========================================================= */
 const DATA = [
   { name:'ユーザー', icon:'user', items:[
@@ -755,7 +938,14 @@ const DATA = [
     { t:'U-NEXT', i:'streaming',
       action:{ message:{ text:'U-NEXT を起動しますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } }
   ]},
+  /* ================= ゲーム（ゲームもどきを追加） ================= */
   { name:'ゲーム', icon:'game', items:[
+    { t:'○×ゲーム (マルバツ)', i:'gameXX',
+      desc:'CPU と対戦するシンプルな 3×3 の ○× ゲームです。',
+      action:{ game: 'tictactoe' } },
+    { t:'スネークゲーム', i:'snakeGame',
+      desc:'エサを食べて伸びるヘビを操作するレトロゲームです。',
+      action:{ game: 'snake' } },
     { t:'PS Vitaアプリケーション管理', i:'folder', sub:'USER',
       action:{ menu:[
         { t:'PS Vita アプリ', i:'game' },
@@ -781,7 +971,8 @@ const DATA = [
         { t:'セーブデータ (本体)', i:'folder' },
         { t:'セーブデータ (USB)',  i:'folder' }
       ] } },
-    { t:'PlayStation®Store', i:'store',
+    /* ★ 画像アイコンのデモ：iconUrl を指定 */
+    { t:'PlayStation®Store', i:'store', iconUrl: DEMO_IMG_PSSTORE,
       action:{ message:{ text:'PlayStation Store を起動しますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } }
   ]},
   { name:'ネットワーク', icon:'globe', items:[
@@ -797,13 +988,14 @@ const DATA = [
   { name:'PlayStation Network', icon:'ps', items:[
     { t:'サインアップ', i:'psnSignup',
       action:{ message:{ text:'PlayStation Network にサインアップしますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } },
-    { t:"What's New", i:'whatsNew',
+    /* ★ 画像アイコンのデモ */
+    { t:"What's New", i:'whatsNew', iconUrl: DEMO_IMG_WHATSNEW,
       action:{ message:{ text:"What's New を表示します。", type:'info' } } },
     { t:'トロフィーコレクション', i:'trophy',
       action:{ message:{ text:'獲得したトロフィーを表示します。', type:'info' } } },
     { t:'PlayStation®Plus', i:'plus',
       action:{ message:{ text:'PlayStation Plus の詳細を表示します。', type:'info' } } },
-    { t:'PlayStation®Store', i:'store',
+    { t:'PlayStation®Store', i:'store', iconUrl: DEMO_IMG_PSSTORE,
       action:{ message:{ text:'PlayStation Store を起動しますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } }
   ]},
   { name:'フレンド', icon:'users', items:[
@@ -833,7 +1025,8 @@ const state = {
   overlay: null,
   overlayOptions: [],
   overlaySelection: 0,
-  prevMode: 'xmb'
+  prevMode: 'xmb',
+  activeGame: null
 };
 
 /* =========================================================
@@ -846,6 +1039,9 @@ const dateEl   = document.getElementById('date');
 const hintEl   = document.getElementById('hint');
 const splashEl = document.getElementById('splash');
 const poweroffEl = document.getElementById('poweroffScreen');
+const gameScreenEl = document.getElementById('gameScreen');
+const gameTitleEl  = document.getElementById('gameTitle');
+const gameBodyEl   = document.getElementById('gameBody');
 
 const overlayEl  = document.getElementById('overlay');
 const ovTextEl   = document.getElementById('ovText');
@@ -884,12 +1080,13 @@ DATA.forEach((cat, ci) => {
     const ie = document.createElement('div');
     ie.className = 'item';
     ie.innerHTML =
-      `<div class="item-icon">${svgIcon(it.i)}</div>` +
+      `<div class="item-icon">${iconMarkup(it, 'item-icon-img')}</div>` +
       `<div class="item-label">` +
         `<span class="item-name">${it.t}</span>` +
         (it.sub ? `<span class="item-sub">${it.sub}</span>` : '') +
       `</div>` +
       (it.desc ? `<div class="item-desc">${it.desc}</div>` : '');
+    attachIconFallbacks(ie);
 
     ie.addEventListener('click', ev => {
       ev.stopPropagation();
@@ -956,14 +1153,13 @@ function openSubmenu(menu){
   updateHint();
   sfx('ok');
 }
-
 function renderSubmenu(){
   submenuEl.innerHTML = '';
   state.sub.items.forEach((it, i) => {
     const el = document.createElement('div');
     el.className = 'sub-item' + (i === state.sub.index ? ' sel' : '');
     el.innerHTML =
-      `<div class="sub-icon">${svgIcon(it.i || 'disc')}</div>` +
+      `<div class="sub-icon">${iconMarkup(it, 'sub-icon-img')}</div>` +
       `<div class="sub-body">` +
         `<div class="sub-top">` +
           `<div class="sub-label">${it.t}</div>` +
@@ -971,6 +1167,7 @@ function renderSubmenu(){
         `</div>` +
         (it.desc ? `<div class="sub-desc">${it.desc}</div>` : '') +
       `</div>`;
+    attachIconFallbacks(el);
     el.addEventListener('mouseenter', () => {
       if (state.mode !== 'submenu') return;
       state.sub.index = i;
@@ -987,12 +1184,10 @@ function renderSubmenu(){
     submenuEl.appendChild(el);
   });
 }
-
 function updateSubSelection(){
   const els = submenuEl.querySelectorAll('.sub-item');
   els.forEach((el, i) => el.classList.toggle('sel', i === state.sub.index));
 }
-
 function positionSubmenu(){
   const selEl = itemGroups[state.cat].els[state.idx[state.cat]];
   if (!selEl) return;
@@ -1006,7 +1201,6 @@ function positionSubmenu(){
   submenuEl.style.left = Math.min(subLeft, maxLeft) + 'px';
   submenuEl.style.top  = subTop + 'px';
 }
-
 function closeSubmenu(){
   sfx('back');
   if (state.subStack.length > 0){
@@ -1020,7 +1214,6 @@ function closeSubmenu(){
   submenuEl.classList.remove('active');
   updateHint();
 }
-
 function moveSub(dir){
   const ni = state.sub.index + dir;
   if (ni < 0 || ni >= state.sub.items.length){ sfx('edge'); return; }
@@ -1028,16 +1221,15 @@ function moveSub(dir){
   updateSubSelection();
   sfx('move');
 }
-
 function confirmSub(){
   const item = state.sub.items[state.sub.index];
   if (item.action && item.action.menu){ openSubmenu(item.action.menu); return; }
+  if (item.action && item.action.game){ startGame(item.action.game); return; }
   if (item.action && item.action.message){
     sfx('ok'); showOverlay(item.action.message); return;
   }
   sfx('ok'); showToast(item.t); flashSubItem();
 }
-
 function flashSubItem(){
   const el = submenuEl.querySelectorAll('.sub-item')[state.sub.index];
   if (el && el.animate){
@@ -1050,7 +1242,7 @@ function flashSubItem(){
 }
 
 /* =========================================================
-   PS3 風オーバーレイ
+   オーバーレイ
    ========================================================= */
 function showOverlay(msg){
   state.prevMode = state.mode;
@@ -1155,6 +1347,7 @@ function confirm(){
   const cat  = DATA[state.cat];
   const item = cat.items[state.idx[state.cat]];
   if (item.action && item.action.menu){ openSubmenu(item.action.menu); return; }
+  if (item.action && item.action.game){ startGame(item.action.game); return; }
   if (item.action && item.action.message){
     sfx('ok'); showOverlay(item.action.message); return;
   }
@@ -1182,6 +1375,8 @@ function updateHint(){
     hintEl.textContent = '← → 選択　Enter 決定　Esc 戻る';
   } else if (state.mode === 'submenu'){
     hintEl.textContent = '↑ ↓ 選択　Enter 決定　Esc 戻る';
+  } else if (state.mode === 'game'){
+    hintEl.textContent = 'ESC で XMB に戻る';
   } else {
     hintEl.textContent = '← → カテゴリ　↑ ↓ 項目　Enter 決定　Esc 戻る';
   }
@@ -1194,26 +1389,374 @@ function showToast(text){
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1700);
 }
 
+/* ============================================================
+   ★ ゲーム機能
+   ============================================================ */
+function startGame(gameId){
+  sfx('ok');
+  state.prevMode = state.mode;
+  state.mode = 'game';
+  gameBodyEl.innerHTML = '';
+
+  if (gameId === 'tictactoe'){
+    gameTitleEl.textContent = '○×ゲーム (マルバツ)';
+    state.activeGame = createTicTacToe(gameBodyEl);
+  } else if (gameId === 'snake'){
+    gameTitleEl.textContent = 'スネークゲーム';
+    state.activeGame = createSnake(gameBodyEl);
+  } else {
+    state.activeGame = null;
+    state.mode = state.prevMode;
+    return;
+  }
+
+  document.body.classList.add('game-on');
+  updateHint();
+}
+
+function exitGame(){
+  if (state.activeGame && state.activeGame.destroy){
+    try { state.activeGame.destroy(); } catch(e){}
+  }
+  state.activeGame = null;
+  sfx('back');
+  document.body.classList.remove('game-on');
+
+  const was = state.prevMode || 'xmb';
+  state.mode = was;
+  if (was === 'submenu'){
+    requestAnimationFrame(() => positionSubmenu());
+  } else {
+    state.subStack = [];
+  }
+  updateHint();
+}
+
+/* ---------- 共通ゲームUI補助 ---------- */
+function makeStatusEl(container){
+  const el = document.createElement('div');
+  el.className = 'game-status';
+  container.appendChild(el);
+  return el;
+}
+function makeHintEl(container, text){
+  const el = document.createElement('div');
+  el.className = 'game-hint-line';
+  el.textContent = text;
+  container.appendChild(el);
+  return el;
+}
+
 /* =========================================================
-   ★ オーディオ管理（全面改修）
+   ○×ゲーム
+   ========================================================= */
+function createTicTacToe(container){
+  const STATUS_IDLE = 'あなた: ○   CPU: ×';
+  let board, turn, cursor, done;
+
+  const statusEl = makeStatusEl(container);
+  const boardEl  = document.createElement('div');
+  boardEl.className = 'ttt-board';
+  const cells = [];
+  for (let i = 0; i < 9; i++){
+    const c = document.createElement('div');
+    c.className = 'ttt-cell';
+    c.addEventListener('click', () => { cursor = i; updateCursor(); play(i); });
+    c.addEventListener('mouseenter', () => { if (!done) { cursor = i; updateCursor(); } });
+    boardEl.appendChild(c);
+    cells.push(c);
+  }
+  container.appendChild(boardEl);
+  makeHintEl(container, '↑↓←→ で選択 / Enter で配置 / R でリセット');
+
+  const LINES = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  function checkWin(){
+    for (const l of LINES){
+      const [a,b,c] = l;
+      if (board[a] && board[a] === board[b] && board[a] === board[c]){
+        return { winner: board[a], line: l };
+      }
+    }
+    if (board.every(v => v)) return { winner: 'draw', line: [] };
+    return null;
+  }
+  function updateCursor(){
+    cells.forEach((c, i) => c.classList.toggle('cursor', i === cursor && !done));
+  }
+  function render(){
+    cells.forEach((c, i) => {
+      const v = board[i];
+      c.textContent = v;
+      c.classList.toggle('o', v === 'O');
+      c.classList.toggle('x', v === 'X');
+      c.classList.toggle('filled', !!v);
+    });
+    const w = checkWin();
+    if (w){
+      done = true;
+      if (w.winner === 'draw'){
+        statusEl.textContent = '引き分け';
+      } else {
+        statusEl.textContent = `${w.winner === 'O' ? 'あなた (○)' : 'CPU (×)'} の勝ち！`;
+        w.line.forEach(i => cells[i].classList.add('win'));
+      }
+    } else {
+      statusEl.textContent = `${STATUS_IDLE}  |  手番: ${turn === 'O' ? '○ (あなた)' : '× (CPU)'}`;
+    }
+    updateCursor();
+  }
+
+  function findBest(sym){
+    for (const [a,b,c] of LINES){
+      const vals = [board[a], board[b], board[c]];
+      if (vals.filter(v => v === sym).length === 2 && vals.filter(v => !v).length === 1){
+        return [a,b,c].find(i => !board[i]);
+      }
+    }
+    return null;
+  }
+
+  function cpuMove(){
+    if (done || turn !== 'X') return;
+    let move = findBest('X');
+    if (move == null) move = findBest('O');
+    if (move == null){
+      const order = [4, 0, 2, 6, 8, 1, 3, 5, 7];
+      move = order.find(i => !board[i]);
+    }
+    if (move == null) return;
+    board[move] = 'X';
+    turn = 'O';
+    render();
+  }
+
+  function play(i){
+    if (done || board[i]) return;
+    if (turn !== 'O') return;
+    board[i] = 'O';
+    turn = 'X';
+    render();
+    if (!done) setTimeout(cpuMove, 300);
+  }
+
+  function reset(){
+    board = ['','','','','','','','',''];
+    turn = 'O';
+    cursor = 4;
+    done = false;
+    cells.forEach(c => c.classList.remove('win'));
+    render();
+  }
+
+  function onKey(e){
+    if (e.key === 'r' || e.key === 'R'){ reset(); return; }
+    if (done) return;
+    if (e.key === 'ArrowLeft'){ cursor = (cursor % 3 === 0) ? cursor + 2 : cursor - 1; updateCursor(); }
+    else if (e.key === 'ArrowRight'){ cursor = (cursor % 3 === 2) ? cursor - 2 : cursor + 1; updateCursor(); }
+    else if (e.key === 'ArrowUp'){ cursor = (cursor < 3) ? cursor + 6 : cursor - 3; updateCursor(); }
+    else if (e.key === 'ArrowDown'){ cursor = (cursor >= 6) ? cursor - 6 : cursor + 3; updateCursor(); }
+    else if (e.key === 'Enter' || e.key === ' '){ play(cursor); }
+  }
+
+  reset();
+  return { onKey, destroy(){} };
+}
+
+/* =========================================================
+   スネークゲーム
+   ========================================================= */
+function createSnake(container){
+  const CELL = 20;
+  const COLS = 24;
+  const ROWS = 20;
+
+  const statusEl = makeStatusEl(container);
+  const canvas = document.createElement('canvas');
+  canvas.className = 'snake-canvas';
+  canvas.width  = COLS * CELL;
+  canvas.height = ROWS * CELL;
+  const ctx2d = canvas.getContext('2d');
+  container.appendChild(canvas);
+  makeHintEl(container, '↑↓←→ で操作 / Space で一時停止 / R でリセット');
+
+  let snake, dir, nextDir, food, score, best = 0, dead, paused, timer;
+
+  function spawnFood(){
+    while (true){
+      const f = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+      if (!snake.some(s => s.x === f.x && s.y === f.y)) return f;
+    }
+  }
+
+  function reset(){
+    snake   = [ {x:5, y:10}, {x:4, y:10}, {x:3, y:10} ];
+    dir     = { x: 1, y: 0 };
+    nextDir = dir;
+    food    = spawnFood();
+    score   = 0;
+    dead    = false;
+    paused  = false;
+    updateStatus();
+    draw();
+    clearInterval(timer);
+    timer = setInterval(tick, 110);
+  }
+
+  function tick(){
+    if (dead || paused) return;
+    dir = nextDir;
+    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+    if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS ||
+        snake.some(s => s.x === head.x && s.y === head.y)){
+      dead = true;
+      if (score > best) best = score;
+      updateStatus();
+      draw();
+      return;
+    }
+    snake.unshift(head);
+    if (head.x === food.x && head.y === food.y){
+      score++;
+      food = spawnFood();
+    } else {
+      snake.pop();
+    }
+    updateStatus();
+    draw();
+  }
+
+  function roundRect(c, x, y, w, h, r){
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+  }
+
+  function draw(){
+    ctx2d.fillStyle = 'rgba(8, 20, 40, 0.95)';
+    ctx2d.fillRect(0, 0, canvas.width, canvas.height);
+
+    /* grid */
+    ctx2d.strokeStyle = 'rgba(80, 140, 200, 0.08)';
+    ctx2d.lineWidth = 1;
+    for (let x = 0; x <= COLS; x++){
+      ctx2d.beginPath();
+      ctx2d.moveTo(x * CELL + 0.5, 0);
+      ctx2d.lineTo(x * CELL + 0.5, canvas.height);
+      ctx2d.stroke();
+    }
+    for (let y = 0; y <= ROWS; y++){
+      ctx2d.beginPath();
+      ctx2d.moveTo(0, y * CELL + 0.5);
+      ctx2d.lineTo(canvas.width, y * CELL + 0.5);
+      ctx2d.stroke();
+    }
+
+    /* food */
+    if (food){
+      ctx2d.fillStyle = '#ff9070';
+      ctx2d.shadowColor = '#ff9070';
+      ctx2d.shadowBlur = 14;
+      ctx2d.beginPath();
+      ctx2d.arc(food.x * CELL + CELL/2, food.y * CELL + CELL/2, CELL * 0.36, 0, Math.PI * 2);
+      ctx2d.fill();
+      ctx2d.shadowBlur = 0;
+    }
+
+    /* snake */
+    snake.forEach((s, i) => {
+      const cx = s.x * CELL + CELL/2;
+      const cy = s.y * CELL + CELL/2;
+      const g = ctx2d.createRadialGradient(cx, cy, 1, cx, cy, CELL * 0.7);
+      if (i === 0){
+        g.addColorStop(0, '#e8f6ff');
+        g.addColorStop(0.55, '#7ec8ff');
+        g.addColorStop(1, 'rgba(100, 180, 255, 0.35)');
+      } else {
+        const t = i / Math.max(1, snake.length - 1);
+        g.addColorStop(0, `rgba(160, 220, 255, ${1 - t * 0.55})`);
+        g.addColorStop(1, 'rgba(60, 130, 220, 0.25)');
+      }
+      ctx2d.fillStyle = g;
+      ctx2d.shadowColor = 'rgba(120, 200, 255, 0.7)';
+      ctx2d.shadowBlur = i === 0 ? 16 : 6;
+      const pad = i === 0 ? 1 : 2;
+      roundRect(ctx2d, s.x * CELL + pad, s.y * CELL + pad, CELL - pad*2, CELL - pad*2, 4);
+      ctx2d.fill();
+    });
+    ctx2d.shadowBlur = 0;
+
+    /* overlays */
+    if (dead){
+      ctx2d.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx2d.fillRect(0, 0, canvas.width, canvas.height);
+      ctx2d.fillStyle = '#fff';
+      ctx2d.textAlign = 'center';
+      ctx2d.font = 'bold 34px system-ui, sans-serif';
+      ctx2d.fillText('GAME OVER', canvas.width/2, canvas.height/2 - 6);
+      ctx2d.font = '15px system-ui, sans-serif';
+      ctx2d.fillStyle = 'rgba(200, 220, 240, 0.9)';
+      ctx2d.fillText('R でリスタート', canvas.width/2, canvas.height/2 + 32);
+    } else if (paused){
+      ctx2d.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx2d.fillRect(0, 0, canvas.width, canvas.height);
+      ctx2d.fillStyle = '#fff';
+      ctx2d.textAlign = 'center';
+      ctx2d.font = 'bold 26px system-ui, sans-serif';
+      ctx2d.fillText('PAUSED', canvas.width/2, canvas.height/2 + 6);
+    }
+  }
+
+  function updateStatus(){
+    statusEl.textContent =
+      `スコア: ${score}   |   ベスト: ${best}` +
+      (dead ? '   |   GAME OVER' : paused ? '   |   一時停止中' : '');
+  }
+
+  function onKey(e){
+    const k = e.key;
+    if (k === 'r' || k === 'R'){ reset(); return; }
+    if (k === ' ' || k === 'Spacebar'){
+      if (!dead){ paused = !paused; updateStatus(); draw(); }
+      return;
+    }
+    if (dead || paused) return;
+    if (k === 'ArrowLeft' && dir.x !== 1)       nextDir = { x: -1, y: 0 };
+    else if (k === 'ArrowRight' && dir.x !== -1) nextDir = { x: 1,  y: 0 };
+    else if (k === 'ArrowUp' && dir.y !== 1)     nextDir = { x: 0,  y: -1 };
+    else if (k === 'ArrowDown' && dir.y !== -1)  nextDir = { x: 0,  y: 1  };
+  }
+
+  reset();
+  return {
+    onKey,
+    destroy(){ clearInterval(timer); }
+  };
+}
+
+/* =========================================================
+   オーディオ
    ========================================================= */
 let actx = null;
 let bootAudioEl = null;
-let bootSoundConsumed = false;   // 1起動につき1回だけ鳴らす
-
-/* SFX プール：キー → Audio 要素の配列（事前ロード済み） */
+let bootSoundConsumed = false;
 const sfxPool = {};
 
-/* ---- AudioContext ---- */
 function ensureAudio(){
   if (!actx){
     const AC = window.AudioContext || window.webkitAudioContext;
     if (AC){
       try { actx = new AC(); }
       catch(e){ aerr('AudioContext 作成失敗:', e); actx = null; }
-    } else {
-      awarn('このブラウザは Web Audio API に対応していません');
-    }
+    } else { awarn('このブラウザは Web Audio API に対応していません'); }
   }
   if (actx && actx.state === 'suspended'){
     actx.resume().then(
@@ -1223,77 +1766,55 @@ function ensureAudio(){
   }
 }
 
-/* ---- 事前ロード ---- */
 function initAudio(){
   alog('=== オーディオ初期化 ===');
   alog('Document URL:', location.href);
 
-  /* 起動音 */
   if (BOOT_SOUND_URL){
     const url = resolveUrl(BOOT_SOUND_URL);
     alog('起動音 URL:', url);
-
     const a = new Audio();
-    /* ★ リスナーは src 設定"前"に付ける（load エラー取りこぼし防止） */
-    a.onloadedmetadata = () => {
-      alog('起動音 メタデータ読込完了 / 長さ:', a.duration.toFixed(2), '秒');
-    };
-    a.oncanplay = () => {
-      alog('起動音 再生可能になりました');
-    };
+    a.onloadedmetadata = () => alog('起動音 メタデータ完了 / 長さ:', a.duration.toFixed(2), '秒');
+    a.oncanplay = () => alog('起動音 再生可能');
     a.onerror = () => {
       const e = a.error;
-      aerr('起動音の読み込みに失敗しました:', url);
+      aerr('起動音の読み込みに失敗:', url);
       if (e){
         aerr('  code =', e.code, ' / message =', e.message || '(なし)');
         if (e.code === 4) aerr('  → ファイルが存在しない、または形式非対応です');
       }
       bootAudioEl = null;
     };
-    a.preload = 'auto';
-    a.volume  = 0.85;
-    a.src     = url;
+    a.preload = 'auto'; a.volume = 0.85; a.src = url;
     bootAudioEl = a;
-    try { a.load(); }
-    catch(e){ awarn('load() 例外:', e); }
+    try { a.load(); } catch(e){ awarn('load() 例外:', e); }
   } else {
     alog('起動音: 未指定（合成音を使用）');
   }
 
-  /* SFX */
   for (const kind in SFX_URLS){
     const raw = SFX_URLS[kind];
     if (!raw){ alog(`SFX "${kind}": 未指定（合成音）`); continue; }
     const url = resolveUrl(raw);
     alog(`SFX "${kind}" URL:`, url);
-
     const pool = sfxPool[kind] = [];
     const a = new Audio();
-    a.onloadedmetadata = () => alog(`SFX "${kind}" メタデータ読込完了`);
+    a.onloadedmetadata = () => alog(`SFX "${kind}" メタデータ完了`);
     a.oncanplay        = () => alog(`SFX "${kind}" 再生可能`);
     a.onerror = () => {
       const e = a.error;
-      aerr(`SFX "${kind}" の読み込みに失敗:`, url,
-           e ? `(code=${e.code})` : '');
+      aerr(`SFX "${kind}" の読み込みに失敗:`, url, e ? `(code=${e.code})` : '');
     };
-    a.preload = 'auto';
-    a.volume  = 0.7;
-    a.src     = url;
-    try { a.load(); }
-    catch(e){ awarn(`SFX "${kind}" load() 例外:`, e); }
+    a.preload = 'auto'; a.volume = 0.7; a.src = url;
+    try { a.load(); } catch(e){ awarn(`SFX "${kind}" load() 例外:`, e); }
     pool.push(a);
   }
   alog('=== オーディオ初期化 完了 ===');
 }
 
-/* ---- 起動音再生（非同期・canplay 待ち） ---- */
 function playBootSound(){
   ensureAudio();
-
-  if (bootSoundConsumed){
-    alog('起動音は既に再生済みのためスキップ');
-    return;
-  }
+  if (bootSoundConsumed){ alog('起動音は既に再生済み'); return; }
 
   if (bootAudioEl){
     const a = bootAudioEl;
@@ -1301,26 +1822,17 @@ function playBootSound(){
       try { a.currentTime = 0; } catch(e){}
       const p = a.play();
       if (p && p.then){
-        p.then(() => {
-          bootSoundConsumed = true;
-          alog('★ 起動音ファイルを再生しました');
-        }).catch(err => {
-          awarn('起動音 play() 失敗:', err.name, '-', err.message);
-          awarn('→ 合成起動音にフォールバックします');
-          playSynthBootSound();
-          bootSoundConsumed = true;
-        });
-      } else {
-        bootSoundConsumed = true;
-      }
+        p.then(() => { bootSoundConsumed = true; alog('★ 起動音ファイル再生'); })
+         .catch(err => {
+           awarn('起動音 play() 失敗:', err.name, '-', err.message);
+           awarn('→ 合成起動音にフォールバック');
+           playSynthBootSound();
+           bootSoundConsumed = true;
+         });
+      } else { bootSoundConsumed = true; }
     };
+    if (a.readyState >= 2){ doPlay(); return; }
 
-    if (a.readyState >= 2){
-      doPlay();
-      return;
-    }
-
-    /* まだロード中 → canplay を待つ（最大2.5秒） */
     alog('起動音ロード待機中... readyState =', a.readyState);
     let settled = false;
     const finish = (useSynth) => {
@@ -1330,41 +1842,33 @@ function playBootSound(){
       a.removeEventListener('error', onError);
       clearTimeout(timer);
       if (useSynth){
-        awarn('→ 合成起動音にフォールバックします');
+        awarn('→ 合成起動音にフォールバック');
         playSynthBootSound();
         bootSoundConsumed = true;
-      } else {
-        doPlay();
-      }
+      } else { doPlay(); }
     };
     const onCanPlay = () => { alog('起動音 canplay 発火'); finish(false); };
-    const onError   = () => { aerr('起動音 error 発火');     finish(true);  };
+    const onError   = () => { aerr('起動音 error 発火'); finish(true); };
     const timer = setTimeout(() => {
-      if (a.readyState < 2){
-        awarn('起動音ロードタイムアウト（2.5秒）');
-        finish(true);
-      } else {
-        finish(false);
-      }
+      if (a.readyState < 2){ awarn('起動音ロードタイムアウト'); finish(true); }
+      else { finish(false); }
     }, 2500);
     a.addEventListener('canplay', onCanPlay);
     a.addEventListener('error', onError);
     return;
   }
 
-  /* カスタム無し or 読込失敗 → 合成 */
-  alog('合成起動音を再生します');
+  alog('合成起動音を再生');
   playSynthBootSound();
   bootSoundConsumed = true;
 }
 
-/* ---- 効果音再生 ---- */
 function sfx(kind){
   const url = SFX_URLS[kind];
   if (url){
     const pool = sfxPool[kind] || [];
     let a = pool.find(x => x.paused || x.ended);
-    if (!a && pool.length > 0) a = pool[0];   // すべて使用中なら先頭を再利用
+    if (!a && pool.length > 0) a = pool[0];
     if (a && a.readyState >= 2){
       try {
         a.currentTime = 0;
@@ -1372,25 +1876,17 @@ function sfx(kind){
         if (p && p.catch){
           p.catch(err => {
             awarn(`SFX "${kind}" 再生失敗:`, err.message);
-            playSynthSfx(kind);   // ★ フォールバック
+            playSynthSfx(kind);
           });
         }
         return;
-      } catch(e){
-        awarn(`SFX "${kind}" 例外:`, e.message);
-      }
+      } catch(e){ awarn(`SFX "${kind}" 例外:`, e.message); }
     }
-    /* 未ロード → 合成音にフォールバック */
-    if (a && a.readyState < 2){
-      // まだロード中なので合成音を出す（次回からはファイルが鳴る）
-      playSynthSfx(kind);
-      return;
-    }
+    if (a && a.readyState < 2){ playSynthSfx(kind); return; }
   }
   playSynthSfx(kind);
 }
 
-/* ---- 合成効果音 ---- */
 function playSynthSfx(kind){
   if (!actx || actx.state !== 'running') return;
   switch(kind){
@@ -1416,13 +1912,12 @@ function tone(freq, dur, type, gain, slideTo, delay){
   osc.start(t0); osc.stop(t0 + dur + 0.03);
 }
 
-/* ---- 合成起動音（PS3風） ---- */
 function playSynthBootSound(){
   if (!actx || actx.state !== 'running'){
-    awarn('AudioContext が running ではないため合成起動音を再生できません');
+    awarn('AudioContext が running でないため合成起動音を再生できません');
     return;
   }
-  alog('合成起動音を生成中');
+  alog('合成起動音を生成');
   const t0 = actx.currentTime;
 
   const bass = actx.createOscillator();
@@ -1476,10 +1971,9 @@ function playSynthBootSound(){
   shim.start(t0 + 2.3); shim.stop(t0 + 3.9);
 }
 
-/* ---- ユーザー操作時のアンロック ---- */
 function unlockAudio(){
   ensureAudio();
-  alog('unlockAudio 呼び出し / ctx.state =', actx ? actx.state : '(null)');
+  alog('unlockAudio / ctx.state =', actx ? actx.state : '(null)');
 }
 
 /* =========================================================
@@ -1492,7 +1986,7 @@ function wait(ms){ return new Promise(r => setTimeout(r, ms)); }
 async function runBootSequence(){
   if (bootState === 'running') return;
   bootState = 'running';
-  bootSoundConsumed = false;   // 起動ごとにリセット
+  bootSoundConsumed = false;
 
   splashEl.style.display = '';
   splashEl.classList.remove('hide', 'logo-in', 'warning-in', 'warning-phase');
@@ -1517,7 +2011,6 @@ async function runBootSequence(){
   if (bootState !== 'running') return;
   finishBoot();
 }
-
 function finishBoot(){
   if (bootState === 'done') return;
   bootState = 'done';
@@ -1539,7 +2032,6 @@ function skipBoot(){
    電源OFF / ON
    ========================================================= */
 let powerOffReady = false;
-
 function enterPowerOff(){
   sfx('back');
   powerOffReady = false;
@@ -1552,7 +2044,6 @@ function enterPowerOff(){
   setTimeout(() => { poweroffEl.classList.add('show-hint'); }, 1200);
   setTimeout(() => { powerOffReady = true; }, 1600);
 }
-
 function exitPowerOff(){
   if (!powerOffReady) return;
   powerOffReady = false;
@@ -1568,6 +2059,20 @@ function exitPowerOff(){
    入力
    ========================================================= */
 document.addEventListener('keydown', e => {
+  /* ゲームモード */
+  if (state.mode === 'game'){
+    if (e.key === 'Escape'){
+      e.preventDefault();
+      exitGame();
+      return;
+    }
+    e.preventDefault();
+    if (state.activeGame && state.activeGame.onKey){
+      state.activeGame.onKey(e);
+    }
+    return;
+  }
+
   if (poweroffEl.classList.contains('active')){
     e.preventDefault();
     if (e.repeat) return;
@@ -1610,6 +2115,7 @@ document.addEventListener('keydown', e => {
 });
 
 document.addEventListener('click', e => {
+  if (state.mode === 'game') return;   /* ゲーム内のクリックは通す */
   if (poweroffEl.classList.contains('active')){
     e.stopPropagation(); e.preventDefault();
     exitPowerOff(); return;
@@ -1623,6 +2129,7 @@ document.addEventListener('click', e => {
 
 let wheelLock = false;
 window.addEventListener('wheel', e => {
+  if (state.mode === 'game') return;
   if (poweroffEl.classList.contains('active')){ exitPowerOff(); return; }
   if (isBooting()){ skipBoot(); return; }
   ensureAudio();
@@ -1637,6 +2144,7 @@ window.addEventListener('wheel', e => {
 
 let touchX = 0, touchY = 0;
 window.addEventListener('touchstart', e => {
+  if (state.mode === 'game') return;
   if (poweroffEl.classList.contains('active') || isBooting()){
     touchX = e.touches[0].clientX; touchY = e.touches[0].clientY; return;
   }
@@ -1645,6 +2153,7 @@ window.addEventListener('touchstart', e => {
 }, { passive: true });
 
 window.addEventListener('touchend', e => {
+  if (state.mode === 'game') return;
   if (poweroffEl.classList.contains('active')){ exitPowerOff(); return; }
   if (isBooting()){ skipBoot(); return; }
   if (state.mode === 'overlay') return;
