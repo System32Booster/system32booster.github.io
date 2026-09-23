@@ -117,7 +117,6 @@
   .item.sel .item-name{ font-size:17px; font-weight:500; }
   .item.sel .item-sub{ color:#c6d6e6; }
 
-  /* 選択中項目の説明文 */
   .item .item-desc{
     position:absolute;
     top:calc(100% + 4px);
@@ -492,7 +491,7 @@
     opacity:1; transition-delay: 1.4s;
   }
 
-  /* ---------- power off ---------- */
+  /* ---------- power off / standby screen ---------- */
   .poweroff-screen{
     position:fixed; inset:0;
     z-index:1500; background:#000;
@@ -505,6 +504,7 @@
     font-size:13px; letter-spacing:.28em;
     color:rgba(255,255,255,.65);
     opacity:0; text-align:center; line-height:2;
+    padding:0 30px;
   }
   .poweroff-screen.show-hint .poweroff-hint{
     animation:
@@ -599,18 +599,41 @@
 
   <div class="splash-warning">
     <h2>光感受性発作について</h2>
-    <p>てんかんの既往症や発作の経験のある方は、使用する前に必ず医師に相談してください。ある種の映像パターンによっては過去に症状を経験したことがない方でも発作が誘発されてしまう場合があります。取扱説明書をよくお読みの上、正しくお使いください。</p>
+    <p>てんかんの既往症や発作の経験のある方は、使用する前に必ず医師に相談してください。ある種の映像パターンによっては過去に症状を経験したことがない方でも発作が誘発されてしまう場合があります。取説明書をよくお読みの上、正しくお使いください。</p>
   </div>
 
   <div class="splash-skip-hint">CLICK / ANY KEY でスキップ</div>
 </div>
 
-<div class="poweroff-screen" id="poweroffScreen">
+<!-- 電源OFF / 初期スタンバイ画面 -->
+<div class="poweroff-screen active" id="poweroffScreen">
   <div class="poweroff-hint">画面をタップして電源を入れる</div>
 </div>
 
 <script>
+/* ============================================================
+   ★ 音声カスタマイズ設定
+   ------------------------------------------------------------
+   ・BOOT_SOUND_URL : 起動音の音声ファイル（空なら合成音）
+   ・SFX_URLS       : 各操作音の音声ファイル（空なら合成音）
+   例:
+     const BOOT_SOUND_URL = './sounds/ps3-boot.mp3';
+     const SFX_URLS = {
+       move: './sounds/move.mp3',
+       ok:   './sounds/ok.mp3',
+       back: './sounds/back.mp3',
+       edge: './sounds/edge.mp3'
+     };
+   ============================================================ */
 const BOOT_SOUND_URL = './sounds/boot.wav';
+
+const SFX_URLS = {
+  move: '',
+  ok:   '',
+  back: '',
+  edge: ''
+};
+
 const BOOT_TIMING = {
   initialDelay: 400, logoHold: 3400, transition: 1000,
   warningHold: 4800, fadeOut: 1200
@@ -620,7 +643,6 @@ const BOOT_TIMING = {
    アイコン
    ========================================================= */
 const ICONS = {
-  /* --- カテゴリアイコン --- */
   user    : '<circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.6-3.9 3.6-6.1 7.2-6.1s6.6 2.2 7.2 6.1"/>',
   users   : '<circle cx="9" cy="8.2" r="3.2"/><path d="M2.8 19.5c.5-3.5 3-5.5 6.2-5.5s5.7 2 6.2 5.5"/><path d="M16.2 5.4a3.1 3.1 0 0 1 0 5.7"/><path d="M17.6 14c2.1.5 3.5 2 3.9 4.4"/>',
   gear    : '<circle cx="12" cy="12" r="3.3"/><path d="M12 2.6v2.6M12 18.8v2.6M2.6 12h2.6M18.8 12h2.6M5.4 5.4l1.8 1.8M16.8 16.8l1.8 1.8M18.6 5.4l-1.8 1.8M7.2 16.8l-1.8 1.8"/>',
@@ -632,7 +654,6 @@ const ICONS = {
   globe   : '<circle cx="12" cy="12" r="9"/><path d="M3.2 12h17.6"/><ellipse cx="12" cy="12" rx="4.2" ry="9"/>',
   ps      : '<circle cx="12" cy="12" r="9"/><path d="M9.4 7.6v8.8M9.4 7.6h4.2a2.6 2.6 0 0 1 0 5.2H9.4"/>',
 
-  /* --- アイテム用 --- */
   folder  : '<path d="M3 7.4A2.2 2.2 0 0 1 5.2 5.2h4.1l2 2.6h7.5A2.2 2.2 0 0 1 21 10v7.4a2.2 2.2 0 0 1-2.2 2.2H5.2A2.2 2.2 0 0 1 3 17.4z"/>',
   disc    : '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.8"/>',
   star    : '<path d="M12 3.6l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 10l6.1-.9z"/>',
@@ -651,72 +672,46 @@ const ICONS = {
   box     : '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05"/><path d="M12 22.08V12"/>',
   tv      : '<rect x="2.6" y="6.4" width="18.8" height="12.6" rx="2.2"/><path d="M8 2.8l4 3.6 4-3.6"/>',
 
-  /* --- 新規追加アイコン（参考画像準拠） --- */
-  /* メディアサーバー検索：横線構造 + 虫めがね */
   mediaSearch:
     '<path d="M2.5 9.5h8.5M2.5 13h5M2.5 16.5h8.5"/>' +
     '<path d="M6.8 9.5v7"/>' +
     '<circle cx="16.5" cy="8.5" r="4.2"/>' +
     '<path d="M19.6 11.6l2.6 2.6"/>',
-
-  /* プレイリスト：三角 + ライン */
   playlist:
     '<path d="M4 6.5v11l7.5-5.5z" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>' +
     '<path d="M14 8h6.5M14 12h6.5M14 16h6.5"/>',
-
-  /* ビデオ編集 & アップロード：三角 + 縦線 */
   videoEdit:
     '<path d="M5 5.5l9.5 6.5L5 18.5z" fill="none"/>' +
-    '<path d="M16.5 5v14"/>' +
-    '<path d="M19 9.5v5"/>',
-
-  /* オンラインマニュアル：？ */
+    '<path d="M16.5 5v14"/><path d="M19 9.5v5"/>',
   question:
     '<path d="M7.5 8.4a4.5 4.5 0 1 1 6.2 4.2c-1.3.6-2 1.5-2 2.9v.7"/>' +
     '<circle cx="11.7" cy="18.8" r="0.95" fill="currentColor" stroke="none"/>',
-
-  /* リモートプレイ：横長の端末 */
   remotePlay:
     '<rect x="2.6" y="8.4" width="18.8" height="7.2" rx="1.8"/>' +
     '<path d="M6.6 12h5"/>',
-
-  /* インターネットブラウザー：www */
   browser:
     '<text x="12" y="16.4" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" ' +
     'font-size="10.5" font-weight="700" fill="currentColor" stroke="none">www</text>',
-
-  /* インターネット検索：虫めがね */
   search:
     '<circle cx="10.6" cy="10.6" r="6"/>' +
     '<path d="M15.1 15.1l5.4 5.4"/>',
-
-  /* サインアップ：PS3 本体風アイコン */
   psnSignup:
     '<rect x="3.6" y="4.8" width="16.8" height="14.4" rx="1.6"/>' +
     '<path d="M8.4 9.6l1.8 3 -1.8 3z" fill="currentColor" stroke="none"/>' +
     '<circle cx="13.6" cy="11.1" r="1.15"/>' +
     '<path d="M16.2 9.6l2 3M18.2 9.6l-2 3"/>' +
     '<rect x="8.4" y="14.6" width="2.2" height="2.2" fill="currentColor" stroke="none"/>',
-
-  /* What's New：オレンジの同心円 */
   whatsNew:
     '<rect x="4" y="4" width="16" height="16" rx="2.4"/>' +
     '<circle cx="12" cy="12" r="5"/>' +
     '<circle cx="12" cy="12" r="2"/>',
-
-  /* PlayStation Store：店アイコン */
   store:
     '<path d="M3.6 7.2L5.4 4h13.2l1.8 3.2"/>' +
     '<path d="M3.6 7.2h16.8v11.6a1.2 1.2 0 0 1-1.2 1.2H4.8a1.2 1.2 0 0 1-1.2-1.2z"/>' +
-    '<path d="M3.6 7.2h16.8"/>' +
     '<path d="M9.6 12.4h4.8"/>',
-
-  /* ストリーミング系の汎用アイコン */
   streaming:
     '<rect x="3" y="5.4" width="18" height="13.2" rx="2"/>' +
     '<path d="M9.6 10.2l4.8 3-4.8 3z" fill="currentColor" stroke="none"/>',
-
-  /* USER バッジ等に使う顔文字系 */
   userSmile:
     '<circle cx="12" cy="12" r="9"/>' +
     '<circle cx="9" cy="10.5" r="1.1" fill="currentColor" stroke="none"/>' +
@@ -732,12 +727,8 @@ function svgIcon(name){
 
 /* =========================================================
    XMB データ（PS3 準拠）
-   ---------------------------------------------------------
-   item.sub → 項目名の下に表示される小さなラベル（例：USER）
-   item.desc → 選択中に表示される説明文
    ========================================================= */
 const DATA = [
-  /* ===================== ユーザー ===================== */
   { name:'ユーザー', icon:'user', items:[
     { t:'本体の電源を切る', i:'power', action:{ message:{
       text: '本体の電源を切りますか？',
@@ -753,8 +744,6 @@ const DATA = [
       text: 'USER としてサインインしています。', type: 'info'
     }}}
   ]},
-
-  /* ===================== 設定 ===================== */
   { name:'設定', icon:'gear', items:[
     { t:'システムアップデート', i:'update',
       desc:'本機のシステムソフトウェアをアップデートします。',
@@ -846,8 +835,6 @@ const DATA = [
       { t:'Wi-Fi設定',          i:'globe' }
     ]}}
   ]},
-
-  /* ===================== フォト ===================== */
   { name:'フォト', icon:'camera', items:[
     { t:'メディアサーバー検索', i:'mediaSearch',
       action:{ message:{ text:'ネットワーク上のメディアサーバーを検索します。', type:'info' } } },
@@ -864,8 +851,6 @@ const DATA = [
       ]}
     }
   ]},
-
-  /* ===================== ミュージック ===================== */
   { name:'ミュージック', icon:'music', items:[
     { t:'メディアサーバー検索', i:'mediaSearch',
       action:{ message:{ text:'ネットワーク上のメディアサーバーを検索します。', type:'info' } } },
@@ -877,8 +862,6 @@ const DATA = [
       ]}
     }
   ]},
-
-  /* ===================== ビデオ ===================== */
   { name:'ビデオ', icon:'film', items:[
     { t:'BDデータ管理', i:'folder',
       action:{ menu:[
@@ -891,8 +874,6 @@ const DATA = [
     { t:'ビデオ編集 & アップロード', i:'videoEdit',
       action:{ message:{ text:'ビデオの編集・アップロードを行います。', type:'info' } } }
   ]},
-
-  /* ===================== テレビ/ビデオサービス ===================== */
   { name:'テレビ/ビデオサービス', icon:'tvService', items:[
     { t:'Netflix', i:'streaming',
       action:{ message:{ text:'Netflix を起動しますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } },
@@ -903,8 +884,6 @@ const DATA = [
     { t:'U-NEXT', i:'streaming',
       action:{ message:{ text:'U-NEXT を起動しますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } }
   ]},
-
-  /* ===================== ゲーム ===================== */
   { name:'ゲーム', icon:'game', items:[
     { t:'PS Vitaアプリケーション管理', i:'folder', sub:'USER',
       action:{ menu:[
@@ -939,8 +918,6 @@ const DATA = [
     { t:'PlayStation®Store', i:'store',
       action:{ message:{ text:'PlayStation Store を起動しますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } }
   ]},
-
-  /* ===================== ネットワーク ===================== */
   { name:'ネットワーク', icon:'globe', items:[
     { t:'オンラインマニュアル', i:'question',
       action:{ message:{ text:'オンラインマニュアルを表示します。', type:'info' } } },
@@ -951,8 +928,6 @@ const DATA = [
     { t:'インターネット検索', i:'search',
       action:{ message:{ text:'インターネット検索を開始します。', type:'info' } } }
   ]},
-
-  /* ===================== PlayStation Network ===================== */
   { name:'PlayStation Network', icon:'ps', items:[
     { t:'サインアップ', i:'psnSignup',
       action:{ message:{ text:'PlayStation Network にサインアップしますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } },
@@ -965,8 +940,6 @@ const DATA = [
     { t:'PlayStation®Store', i:'store',
       action:{ message:{ text:'PlayStation Store を起動しますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } }
   ]},
-
-  /* ===================== フレンド ===================== */
   { name:'フレンド', icon:'users', items:[
     { t:'フレンドリスト', i:'users', action:{ menu:[
       { t:'オンライン', i:'users' },
@@ -1021,7 +994,6 @@ const catEls     = [];
 const itemGroups = [];
 
 DATA.forEach((cat, ci) => {
-  /* --- カテゴリ --- */
   const el = document.createElement('div');
   el.className = 'cat';
   el.innerHTML =
@@ -1039,7 +1011,6 @@ DATA.forEach((cat, ci) => {
   stage.appendChild(el);
   catEls.push(el);
 
-  /* --- 項目 --- */
   const wrap = document.createElement('div');
   wrap.className = 'items';
 
@@ -1387,16 +1358,140 @@ function showToast(text){
 }
 
 /* =========================================================
-   サウンド
+   ★ オーディオ管理（起動音 / 効果音のカスタマイズ対応）
    ========================================================= */
 let actx = null;
+let bootAudioEl = null;
+let bootAudioPending = false;
+let bootSynthPending = false;
+
+/* SFX 用の Audio プール */
+const sfxPool = {};
+
+/* 起動時に一度だけ呼ぶ：オーディオのプリロードとアンロック準備 */
+function initAudio(){
+  /* --- 起動音ファイルのプリロード --- */
+  if (BOOT_SOUND_URL){
+    bootAudioEl = new Audio();
+    bootAudioEl.preload = 'auto';
+    bootAudioEl.src = BOOT_SOUND_URL;
+    bootAudioEl.volume = 0.85;
+    bootAudioEl.addEventListener('error', () => {
+      console.warn('[XMB] 起動音の読み込みに失敗しました:', BOOT_SOUND_URL);
+      bootAudioEl = null;
+    });
+    bootAudioEl.load();
+  }
+
+  /* --- SFX ファイルのプリロード --- */
+  for (const key in SFX_URLS){
+    const url = SFX_URLS[key];
+    if (!url) continue;
+    const a = new Audio();
+    a.preload = 'auto';
+    a.src = url;
+    a.volume = 0.7;
+    a.addEventListener('error', () => {
+      console.warn(`[XMB] 効果音 "${key}" の読み込みに失敗しました:`, url);
+    });
+    a.load();
+  }
+}
+
+/* AudioContext を準備 / レジューム */
 function ensureAudio(){
   if (!actx){
     const AC = window.AudioContext || window.webkitAudioContext;
     if (AC) { try { actx = new AC(); } catch(e){ actx = null; } }
   }
-  if (actx && actx.state === 'suspended') actx.resume().catch(()=>{});
+  if (actx && actx.state === 'suspended') {
+    actx.resume().catch(()=>{});
+  }
 }
+
+/* ユーザー操作で呼ぶ：保留中の起動音を再生 */
+function unlockAudio(){
+  ensureAudio();
+
+  /* 次のフレームでコンテキストが running になってから再生 */
+  setTimeout(() => {
+    if (bootAudioPending && bootAudioEl){
+      bootAudioPending = false;
+      try {
+        bootAudioEl.currentTime = 0;
+        bootAudioEl.play().catch(()=>{});
+      } catch(e){}
+    } else if (bootSynthPending){
+      bootSynthPending = false;
+      playSynthBootSound();
+    }
+  }, 80);
+}
+
+/* 起動音を再生 */
+function playBootSound(){
+  ensureAudio();
+
+  /* カスタム音声ファイル優先 */
+  if (bootAudioEl){
+    try {
+      bootAudioEl.currentTime = 0;
+      const p = bootAudioEl.play();
+      if (p && p.then){
+        p.then(() => { bootAudioPending = false; })
+         .catch(() => {
+           /* 自動再生ブロック → ユーザー操作待ち */
+           bootAudioPending = true;
+           console.info('[XMB] 起動音はブラウザの自動再生ポリシーにより保留中です。何か操作すると再生されます。');
+         });
+      }
+      return;
+    } catch(e){
+      console.warn('[XMB] 起動音の再生に失敗:', e);
+    }
+  }
+
+  /* 合成音フォールバック */
+  if (actx && actx.state === 'running'){
+    playSynthBootSound();
+  } else {
+    bootSynthPending = true;
+  }
+}
+
+/* SFX 再生（カスタムファイル優先 → 合成音フォールバック） */
+function sfx(kind){
+  /* カスタム音声ファイル */
+  const url = SFX_URLS[kind];
+  if (url){
+    try {
+      /* プールから停止中のものを取り出す */
+      if (!sfxPool[kind]) sfxPool[kind] = [];
+      const pool = sfxPool[kind];
+      let a = pool.find(x => x.paused || x.ended);
+      if (!a){
+        a = new Audio(url);
+        a.volume = 0.7;
+        a.preload = 'auto';
+        pool.push(a);
+        if (pool.length > 5) pool.shift();
+      }
+      a.currentTime = 0;
+      a.play().catch(()=>{});
+      return;
+    } catch(e){ /* 合成音へフォールバック */ }
+  }
+
+  /* 合成音 */
+  if (!actx || actx.state !== 'running') return;
+  switch(kind){
+    case 'move':  tone(1350, 0.055, 'sine', 0.045, 950); tone(2700, 0.03, 'sine', 0.014, 2000); break;
+    case 'ok':    tone(880, 0.09, 'sine', 0.06); tone(1320, 0.16, 'sine', 0.05, null, 0.07); break;
+    case 'back':  tone(760, 0.10, 'sine', 0.05, 430); break;
+    case 'edge':  tone(180, 0.07, 'square', 0.016, 130); break;
+  }
+}
+
 function tone(freq, dur, type, gain, slideTo, delay){
   if (!actx || actx.state !== 'running') return;
   const t0 = actx.currentTime + (delay || 0);
@@ -1411,16 +1506,8 @@ function tone(freq, dur, type, gain, slideTo, delay){
   osc.connect(g); g.connect(actx.destination);
   osc.start(t0); osc.stop(t0 + dur + 0.03);
 }
-function sfx(kind){
-  if (!actx || actx.state !== 'running') return;
-  switch(kind){
-    case 'move':  tone(1350, 0.055, 'sine', 0.045, 950); tone(2700, 0.03, 'sine', 0.014, 2000); break;
-    case 'ok':    tone(880, 0.09, 'sine', 0.06); tone(1320, 0.16, 'sine', 0.05, null, 0.07); break;
-    case 'back':  tone(760, 0.10, 'sine', 0.05, 430); break;
-    case 'edge':  tone(180, 0.07, 'square', 0.016, 130); break;
-  }
-}
 
+/* 合成起動音（PS3 風） */
 function playSynthBootSound(){
   if (!actx || actx.state !== 'running') return;
   const t0 = actx.currentTime;
@@ -1476,20 +1563,6 @@ function playSynthBootSound(){
   shim.start(t0 + 2.3); shim.stop(t0 + 3.9);
 }
 
-function playBootSound(){
-  ensureAudio();
-  if (BOOT_SOUND_URL){
-    try {
-      const audio = new Audio(BOOT_SOUND_URL);
-      audio.volume = 0.85;
-      const p = audio.play();
-      if (p && p.catch) p.catch(() => playSynthBootSound());
-      return;
-    } catch(e){}
-  }
-  playSynthBootSound();
-}
-
 /* =========================================================
    起動シーケンス
    ========================================================= */
@@ -1528,6 +1601,10 @@ async function runBootSequence(){
 function finishBoot(){
   if (bootState === 'done') return;
   bootState = 'done';
+  /* 保留中の起動音をクリア（スキップ時に鳴らないように） */
+  bootAudioPending = false;
+  bootSynthPending = false;
+
   splashEl.classList.remove('logo-in', 'warning-in');
   splashEl.classList.add('hide');
   document.body.classList.remove('booting');
@@ -1559,14 +1636,19 @@ function enterPowerOff(){
   poweroffEl.classList.add('active');
   poweroffEl.classList.remove('show-hint');
 
-  setTimeout(() => { poweroffEl.classList.add('show-hint'); }, 1600);
-  setTimeout(() => { powerOffReady = true; }, 2000);
+  setTimeout(() => { poweroffEl.classList.add('show-hint'); }, 1200);
+  setTimeout(() => { powerOffReady = true; }, 1600);
 }
 
 function exitPowerOff(){
   if (!powerOffReady) return;
   powerOffReady = false;
+
+  /* ユーザー操作が確定したのでオーディオをアンロック */
+  unlockAudio();
+
   poweroffEl.classList.remove('active', 'show-hint');
+
   setTimeout(() => {
     bootState = 'idle';
     runBootSequence();
@@ -1577,8 +1659,15 @@ function exitPowerOff(){
    入力
    ========================================================= */
 document.addEventListener('keydown', e => {
-  if (poweroffEl.classList.contains('active')){ e.preventDefault(); exitPowerOff(); return; }
+  /* スタンバイ画面では任意のキーで電源ON */
+  if (poweroffEl.classList.contains('active')){
+    e.preventDefault();
+    if (e.repeat) return;
+    exitPowerOff();
+    return;
+  }
   if (isBooting()){ e.preventDefault(); skipBoot(); return; }
+
   ensureAudio();
 
   if (state.mode === 'overlay'){
@@ -1614,8 +1703,18 @@ document.addEventListener('keydown', e => {
 });
 
 document.addEventListener('click', e => {
-  if (poweroffEl.classList.contains('active')){ e.stopPropagation(); e.preventDefault(); exitPowerOff(); return; }
-  if (isBooting()){ e.stopPropagation(); e.preventDefault(); skipBoot(); return; }
+  if (poweroffEl.classList.contains('active')){
+    e.stopPropagation();
+    e.preventDefault();
+    exitPowerOff();
+    return;
+  }
+  if (isBooting()){
+    e.stopPropagation();
+    e.preventDefault();
+    skipBoot();
+    return;
+  }
   ensureAudio();
 }, true);
 
@@ -1637,10 +1736,13 @@ window.addEventListener('wheel', e => {
 let touchX = 0, touchY = 0;
 window.addEventListener('touchstart', e => {
   if (poweroffEl.classList.contains('active') || isBooting()){
-    touchX = e.touches[0].clientX; touchY = e.touches[0].clientY; return;
+    touchX = e.touches[0].clientX;
+    touchY = e.touches[0].clientY;
+    return;
   }
   ensureAudio();
-  touchX = e.touches[0].clientX; touchY = e.touches[0].clientY;
+  touchX = e.touches[0].clientX;
+  touchY = e.touches[0].clientY;
 }, { passive: true });
 
 window.addEventListener('touchend', e => {
@@ -1786,7 +1888,14 @@ requestAnimationFrame(() => {
   render();
   updateHint();
   requestAnimationFrame(drawBG);
-  runBootSequence();
+
+  /* オーディオをプリロード */
+  initAudio();
+
+  /* 初期状態：スタンバイ画面（電源OFF状態と同じ見た目）
+     → ユーザーがクリック/タップすると起動シーケンス開始 */
+  setTimeout(() => { poweroffEl.classList.add('show-hint'); }, 300);
+  setTimeout(() => { powerOffReady = true; }, 700);
 
   if (document.fonts && document.fonts.ready){
     document.fonts.ready.then(() => {
