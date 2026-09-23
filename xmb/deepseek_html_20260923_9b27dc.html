@@ -1,0 +1,1799 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XMB — XrossMediaBar</title>
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html,body{
+    height:100%; overflow:hidden;
+    background:#04060c; color:#fff;
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",YuGothic,Meiryo,
+                system-ui,-apple-system,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    user-select:none; cursor:default;
+  }
+
+  body.booting #stage, body.booting .hud, body.booting .hint{
+    opacity:0; pointer-events:none;
+  }
+
+  #bg{ position:fixed; inset:0; display:block; z-index:0; }
+  .vignette{
+    position:fixed; inset:0; z-index:1; pointer-events:none;
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 50%,
+        rgba(0,0,0,0) 0%, rgba(0,0,0,.35) 55%, rgba(0,0,0,.82) 100%),
+      linear-gradient(180deg, rgba(0,0,0,.5) 0%, rgba(0,0,0,0) 22%,
+                              rgba(0,0,0,0) 70%, rgba(0,0,0,.65) 100%);
+  }
+
+  #stage{
+    position:fixed; inset:0; z-index:10;
+    transition: opacity .9s ease, filter .9s ease;
+  }
+  body.overlay-on #stage{ opacity:0; filter:blur(10px); pointer-events:none; }
+  body.overlay-on .hud, body.overlay-on .hint{ opacity:0 !important; }
+
+  /* ---------- category ---------- */
+  .cat{
+    position:absolute; left:50%; top:50%;
+    width:64px; height:64px;
+    display:grid; place-items:center;
+    color:#7890aa; cursor:pointer;
+    transform:translate(-50%,-50%) scale(.35);
+    opacity:0;
+    transition:
+      transform .5s cubic-bezier(.22,.61,.36,1),
+      opacity   .45s ease, color .35s ease, filter .35s ease;
+    z-index:20;
+  }
+  .cat .cat-icon{ display:grid; place-items:center; width:52px; height:52px; }
+  .cat .cat-icon svg{ width:100%; height:100%; display:block; }
+  .cat .cat-label{
+    position:absolute; top:calc(100% + 8px); left:50%;
+    transform:translateX(-50%);
+    white-space:nowrap;
+    font-size:11px; letter-spacing:.16em;
+    color:#dbe9f7;
+    text-shadow:0 0 10px rgba(0,0,0,.9), 0 0 22px rgba(80,150,220,.6);
+    opacity:0; transition:opacity .35s ease;
+    pointer-events:none;
+  }
+  .cat.active{
+    color:#ffffff;
+    filter:drop-shadow(0 0 10px rgba(150,215,255,.9))
+           drop-shadow(0 0 26px rgba(70,150,230,.55));
+  }
+  .cat.active .cat-label{ opacity:.92; }
+
+  /* ---------- item column ---------- */
+  .items{
+    position:absolute; inset:0;
+    opacity:0; pointer-events:none;
+    transition:opacity .32s ease;
+    z-index:15;
+  }
+  .items.active{ opacity:1; pointer-events:auto; }
+
+  .item{
+    position:absolute;
+    left:calc(50% - 22px);
+    top:50%;
+    min-height:44px;
+    display:flex; align-items:center;
+    gap:16px;
+    color:#8ba1b9; cursor:pointer;
+    transform-origin:22px 50%;
+    transform:translateY(-50%) scale(.4);
+    opacity:0;
+    transition:
+      transform .45s cubic-bezier(.22,.61,.36,1),
+      opacity   .35s ease, color .3s ease, filter .3s ease;
+  }
+  .item .item-icon{
+    flex:0 0 auto;
+    width:44px; height:44px;
+    display:grid; place-items:center;
+  }
+  .item .item-icon svg{ width:34px; height:34px; display:block; }
+  .item .item-label{
+    display:flex; flex-direction:column; gap:1px;
+    line-height:1.2;
+    text-shadow:0 1px 8px rgba(0,0,0,.9);
+  }
+  .item .item-name{
+    font-size:15px; letter-spacing:.05em;
+    transition:font-size .3s ease, font-weight .3s ease;
+    white-space:nowrap;
+  }
+  .item .item-sub{
+    font-size:10px; letter-spacing:.16em;
+    color:#7e93aa;
+    transition:color .3s ease;
+  }
+  .item.sel .item-name{ font-size:17px; font-weight:500; }
+  .item.sel .item-sub{ color:#c6d6e6; }
+
+  /* 選択中項目の説明文 */
+  .item .item-desc{
+    position:absolute;
+    top:calc(100% + 4px);
+    left:60px;
+    width:max-content;
+    max-width:min(520px, 46vw);
+    font-size:12px;
+    line-height:1.55;
+    letter-spacing:.02em;
+    color:#c6d6e6;
+    text-shadow:0 1px 6px rgba(0,0,0,.9);
+    opacity:0; pointer-events:none;
+    transition:opacity .35s ease;
+    white-space:normal;
+  }
+  .item.sel .item-desc{ opacity:1; }
+
+  .item.sel{
+    color:#ffffff;
+    filter:drop-shadow(0 0 9px rgba(150,215,255,.55));
+  }
+  .item.sel .item-icon svg{
+    filter:drop-shadow(0 0 8px rgba(140,210,255,.9));
+  }
+
+  /* ---------- submenu ---------- */
+  .submenu{
+    position:absolute;
+    top:50%;
+    left:calc(50% + 240px);
+    transform:translateY(-50%) translateX(-18px);
+    opacity:0; pointer-events:none;
+    display:flex; flex-direction:column; gap:2px;
+    max-height:82vh; overflow-y:auto;
+    padding:8px 0;
+    transition:
+      opacity .26s ease,
+      transform .32s cubic-bezier(.22,.61,.36,1);
+    z-index:60;
+    scrollbar-width:none;
+  }
+  .submenu::-webkit-scrollbar{ display:none; }
+  .submenu.active{
+    opacity:1;
+    transform:translateY(-50%) translateX(0);
+    pointer-events:auto;
+  }
+
+  .sub-item{
+    display:flex; align-items:flex-start;
+    gap:14px;
+    padding:9px 26px 9px 14px;
+    min-width:420px;
+    max-width:min(600px, 44vw);
+    color:#8ba1b9;
+    border-radius:6px;
+    cursor:pointer;
+    transition: color .2s ease, background .25s ease, box-shadow .25s ease;
+    position:relative;
+  }
+  .sub-item .sub-icon{
+    flex:0 0 auto;
+    width:26px; height:26px;
+    margin-top:1px;
+    display:grid; place-items:center;
+  }
+  .sub-item .sub-icon svg{ width:22px; height:22px; display:block; }
+  .sub-item .sub-body{
+    flex:1; min-width:0;
+    display:flex; flex-direction:column;
+  }
+  .sub-top{
+    display:flex; align-items:baseline;
+    justify-content:space-between;
+    gap:32px;
+  }
+  .sub-item .sub-label{
+    font-size:14px; letter-spacing:.04em;
+    white-space:nowrap;
+    text-shadow:0 1px 6px rgba(0,0,0,.9);
+  }
+  .sub-item .sub-value{
+    font-size:13px; letter-spacing:.04em;
+    color:#b8cce0;
+    white-space:nowrap;
+    text-shadow:0 1px 6px rgba(0,0,0,.9);
+  }
+  .sub-item .sub-desc{
+    font-size:11px; line-height:1.55;
+    letter-spacing:.02em;
+    color:#a8bdd2;
+    opacity:0; max-height:0;
+    overflow:hidden;
+    transition:opacity .25s ease, max-height .32s ease, margin-top .32s ease;
+    text-shadow:0 1px 4px rgba(0,0,0,.9);
+  }
+  .sub-item.sel{
+    color:#ffffff;
+    background:linear-gradient(90deg,
+      rgba(90,170,255,.22) 0%,
+      rgba(90,170,255,.06) 70%,
+      rgba(90,170,255,0) 100%);
+    transform:translateX(4px);
+    box-shadow:-2px 0 0 0 rgba(150,215,255,.9);
+  }
+  .sub-item.sel .sub-icon{
+    filter:drop-shadow(0 0 6px rgba(150,215,255,.9));
+  }
+  .sub-item.sel .sub-value{ color:#e0ecf8; }
+  .sub-item.sel .sub-desc{
+    opacity:1; max-height:120px; margin-top:5px;
+  }
+
+  /* ---------- HUD ---------- */
+  .hud{
+    position:fixed; inset:0; z-index:100;
+    pointer-events:none;
+    padding:22px 30px;
+    display:flex; justify-content:flex-end; align-items:flex-start;
+    transition:opacity .38s ease;
+  }
+  .clock-box{ text-align:right; line-height:1.15; }
+  .clock{
+    font-size:30px; font-weight:300; letter-spacing:.06em;
+    text-shadow:0 0 18px rgba(120,180,255,.5), 0 2px 6px rgba(0,0,0,.8);
+  }
+  .date{
+    font-size:12px; letter-spacing:.14em; color:#a8c2da;
+    text-shadow:0 2px 6px rgba(0,0,0,.8);
+  }
+
+  .hint{
+    position:fixed; left:50%; bottom:20px;
+    transform:translateX(-50%);
+    z-index:100;
+    font-size:11px; letter-spacing:.18em;
+    color:#7f9ab5; opacity:.5;
+    pointer-events:none; white-space:nowrap;
+    transition:opacity .6s ease;
+  }
+
+  .toast{
+    position:fixed; left:50%; bottom:62px;
+    transform:translate(-50%, 14px);
+    z-index:120;
+    padding:9px 22px;
+    border-radius:999px;
+    font-size:13px; letter-spacing:.08em;
+    color:#eaf4ff;
+    background:rgba(20,38,60,.55);
+    border:1px solid rgba(130,195,255,.28);
+    box-shadow:0 0 26px rgba(60,140,220,.35), inset 0 0 20px rgba(80,160,255,.12);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    opacity:0; pointer-events:none;
+    transition:opacity .3s ease, transform .3s ease;
+    white-space:nowrap;
+  }
+  .toast.show{ opacity:1; transform:translate(-50%, 0); }
+
+  /* ---------- overlay ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    z-index:200;
+    display:flex; flex-direction:column;
+    opacity:0; pointer-events:none;
+    transition:opacity .42s ease;
+    background:rgba(6, 10, 20, 0.45);
+    backdrop-filter: blur(22px) brightness(0.55) saturate(1.1);
+    -webkit-backdrop-filter: blur(22px) brightness(0.55) saturate(1.1);
+  }
+  body.overlay-on .overlay{ opacity:1; pointer-events:auto; }
+
+  .overlay-top-line, .overlay-bottom-line{
+    height:1px;
+    background:linear-gradient(90deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,.28) 18%,
+      rgba(255,255,255,.4) 50%,
+      rgba(255,255,255,.28) 82%,
+      rgba(255,255,255,0) 100%);
+    box-shadow:0 0 14px rgba(190,220,255,.35);
+  }
+  .overlay-top-line{ margin-top:16vh; }
+  .overlay-bottom-line{ margin-bottom:14vh; }
+
+  .overlay-content{
+    flex:1;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:46px;
+    padding:0 40px;
+  }
+  .overlay-text{
+    font-size:20px; letter-spacing:.14em;
+    color:#fff; text-align:center;
+    text-shadow:
+      0 2px 14px rgba(0,0,0,.85),
+      0 0 40px rgba(180,220,255,.25);
+    white-space:pre-line; line-height:1.75;
+    font-weight:400;
+  }
+  .overlay-options{
+    display:flex; gap:90px;
+    justify-content:center; align-items:center;
+  }
+  .overlay-opt{
+    position:relative;
+    padding:12px 30px;
+    font-size:20px; letter-spacing:.18em;
+    color:#c4cfdd;
+    background:none; border:none; font-family:inherit;
+    cursor:pointer;
+    transition: color .25s ease, text-shadow .25s ease;
+    text-shadow:0 2px 10px rgba(0,0,0,.8);
+    font-weight:400;
+  }
+  .overlay-opt.sel{
+    color:#ffffff;
+    text-shadow:
+      0 0 16px rgba(255,255,255,.85),
+      0 0 40px rgba(180,220,255,.55),
+      0 2px 10px rgba(0,0,0,.85);
+  }
+  .overlay-opt.sel::before{
+    content:'';
+    position:absolute; inset:0;
+    border-radius:10px;
+    background:radial-gradient(ellipse at center,
+      rgba(255,255,255,.18) 0%,
+      rgba(200,225,255,.06) 60%,
+      transparent 100%);
+    box-shadow:0 0 26px rgba(160,210,255,.28);
+    pointer-events:none;
+  }
+  .overlay-footer{
+    display:flex; justify-content:center;
+    gap:120px;
+    padding:22px 40px 34px;
+    font-size:13px; letter-spacing:.16em;
+    color:#c4cfdd;
+    text-shadow:0 2px 8px rgba(0,0,0,.8);
+  }
+  .footer-hint{ display:flex; align-items:center; gap:10px; }
+  .footer-hint .btn-icon{
+    display:inline-grid; place-items:center;
+    width:22px; height:22px;
+    border-radius:50%;
+    border:1.5px solid currentColor;
+    font-size:11px; line-height:1;
+  }
+
+  /* ---------- splash ---------- */
+  .splash{
+    position:fixed; inset:0;
+    z-index:1000; overflow:hidden;
+    opacity:1;
+    transition:opacity 1.1s ease;
+    pointer-events:none;
+  }
+  .splash::before{
+    content:''; position:absolute; inset:0;
+    background:radial-gradient(ellipse 90% 80% at 50% 50%,
+      rgba(0,0,0,0) 0%, rgba(0,0,0,.15) 55%, rgba(0,0,0,.5) 100%);
+    pointer-events:none;
+  }
+  .splash.hide{ opacity:0; }
+
+  .splash-logo{
+    position:absolute;
+    right:7%; top:47%;
+    transform: translateY(-50%) translateX(110px) scale(.96);
+    opacity:0;
+    display:flex; align-items:center;
+    gap: clamp(18px, 2vw, 38px);
+    transition:
+      opacity 1.5s ease,
+      transform 1.9s cubic-bezier(.18,.7,.3,1);
+    pointer-events:none;
+    filter: drop-shadow(0 0 26px rgba(160,210,255,.28));
+  }
+  .splash.logo-in .splash-logo{
+    opacity:1;
+    transform: translateY(-50%) translateX(0) scale(1);
+  }
+  .splash.warning-phase .splash-logo{
+    opacity:0;
+    transform: translateY(-50%) translateX(70px) scale(.97);
+    transition: opacity .7s ease, transform .9s ease;
+  }
+  .ps-symbol{
+    width: clamp(70px, 7.6vw, 118px);
+    height: clamp(96px, 10.4vw, 152px);
+    color:#eef4fb; flex:0 0 auto;
+  }
+  .ps-symbol svg{ width:100%; height:100%; display:block; }
+  .ps3-brand{
+    display:flex; flex-direction:column;
+    align-items:flex-start; line-height:1;
+  }
+  .ps3-big{
+    font-family: "Arial Black","Helvetica Neue","Hiragino Kaku Gothic ProN",
+                 "Yu Gothic", sans-serif;
+    font-weight: 900;
+    font-size: clamp(72px, 9.6vw, 148px);
+    letter-spacing: -0.035em;
+    line-height: 0.88;
+    color:#f2f7fc;
+    transform: scaleX(1.16);
+    transform-origin: left center;
+    text-shadow:
+      0 0 32px rgba(190,225,255,.42),
+      0 0 70px rgba(120,180,255,.28),
+      0 2px 10px rgba(0,0,0,.55);
+    margin-bottom: clamp(8px, 1vw, 14px);
+  }
+  .ps3-sub{
+    margin-left: 4px;
+    font-size: clamp(16px, 1.55vw, 26px);
+    font-weight: 400; letter-spacing: .015em;
+    color:#d4dfeb;
+    text-shadow:
+      0 0 14px rgba(170,215,255,.4),
+      0 1px 4px rgba(0,0,0,.55);
+  }
+
+  .splash-warning{
+    position:absolute;
+    left:50%; top:50%;
+    transform: translate(-50%, calc(-50% + 22px));
+    width: min(940px, 74vw);
+    text-align:left;
+    color:#fff; opacity:0; pointer-events:none;
+    transition: opacity 1.3s ease, transform 1.3s ease;
+  }
+  .splash-warning::before{
+    content:''; position:absolute;
+    inset:-40px -60px;
+    background:radial-gradient(ellipse 70% 60% at 50% 50%,
+      rgba(0,0,0,.55) 0%, rgba(0,0,0,.25) 55%, rgba(0,0,0,0) 100%);
+    pointer-events:none; z-index:-1; border-radius:24px;
+  }
+  .splash.warning-in .splash-warning{
+    opacity:1;
+    transform: translate(-50%, -50%);
+  }
+  .splash-warning h2{
+    font-size: clamp(15px, 1.25vw, 19px);
+    font-weight: 500; letter-spacing: .08em;
+    margin-bottom: 14px; color:#ffffff;
+    text-shadow:0 2px 12px rgba(0,0,0,.9);
+  }
+  .splash-warning p{
+    font-size: clamp(13px, 1.05vw, 16px);
+    line-height: 1.9; letter-spacing: .04em;
+    color:#f8fafc;
+    text-shadow:0 2px 12px rgba(0,0,0,.9);
+  }
+
+  .splash-skip-hint{
+    position:absolute;
+    right: 28px; bottom: 22px;
+    font-size: 11px; letter-spacing: .18em;
+    color: rgba(255,255,255,.32);
+    text-shadow: 0 1px 4px rgba(0,0,0,.6);
+    opacity:0;
+    transition: opacity .8s ease;
+    pointer-events:none;
+  }
+  .splash.logo-in .splash-skip-hint,
+  .splash.warning-in .splash-skip-hint{
+    opacity:1; transition-delay: 1.4s;
+  }
+
+  /* ---------- power off ---------- */
+  .poweroff-screen{
+    position:fixed; inset:0;
+    z-index:1500; background:#000;
+    opacity:0; pointer-events:none;
+    transition:opacity 1.4s ease;
+    display:grid; place-items:center;
+  }
+  .poweroff-screen.active{ opacity:1; pointer-events:auto; }
+  .poweroff-hint{
+    font-size:13px; letter-spacing:.28em;
+    color:rgba(255,255,255,.65);
+    opacity:0; text-align:center; line-height:2;
+  }
+  .poweroff-screen.show-hint .poweroff-hint{
+    animation:
+      hint-fade-in .9s ease-out forwards,
+      hint-pulse 2.6s ease-in-out 1s infinite;
+  }
+  @keyframes hint-fade-in{ 0%{opacity:0;} 100%{opacity:.6;} }
+  @keyframes hint-pulse{ 0%,100%{opacity:.6;} 50%{opacity:.95;} }
+
+  @media (max-width:760px){
+    .clock{ font-size:22px; }
+    .hint{ font-size:9px; letter-spacing:.1em; }
+    .item .item-name{ font-size:13px; }
+    .item.sel .item-name{ font-size:15px; }
+    .item .item-desc{ font-size:11px; max-width:56vw; }
+    .overlay-text{ font-size:16px; }
+    .overlay-options{ gap:56px; }
+    .overlay-opt{ font-size:16px; padding:10px 20px; }
+    .overlay-footer{ gap:60px; font-size:11px; }
+    .overlay-top-line{ margin-top:12vh; }
+    .overlay-bottom-line{ margin-bottom:10vh; }
+    .submenu{ left:auto; right:16px; }
+    .sub-item{ min-width:0; max-width:70vw; }
+    .splash-logo{ right: 5%; }
+    .splash-warning{ width: 84vw; }
+  }
+</style>
+</head>
+<body class="booting">
+
+<canvas id="bg"></canvas>
+<div class="vignette"></div>
+<div id="stage"></div>
+
+<div class="hud">
+  <div class="clock-box">
+    <div class="clock" id="clock">--:--</div>
+    <div class="date" id="date"></div>
+  </div>
+</div>
+
+<div class="hint" id="hint">← → カテゴリ　↑ ↓ 項目　Enter 決定　Esc 戻る</div>
+<div class="toast" id="toast"></div>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-top-line"></div>
+  <div class="overlay-content">
+    <div class="overlay-text" id="ovText"></div>
+    <div class="overlay-options" id="ovOptions"></div>
+  </div>
+  <div class="overlay-bottom-line"></div>
+  <div class="overlay-footer" id="ovFooter"></div>
+</div>
+
+<div class="splash" id="splash">
+  <div class="splash-logo">
+    <div class="ps-symbol">
+      <svg viewBox="0 0 200 260" fill="none">
+        <path d="
+          M104 8
+          C104 8 78 2 58 14
+          C40 25 34 46 42 64
+          C48 78 64 85 86 88
+          L86 240
+          L114 240
+          L114 90
+          C136 88 158 78 168 60
+          C180 38 172 16 150 8
+          C132 2 116 4 104 8 Z
+        " fill="currentColor"/>
+        <path d="
+          M86 58
+          C86 58 88 36 106 32
+          C122 29 128 46 120 62
+          C112 78 96 80 86 78 Z
+        " fill="rgba(12,26,44,0.9)"/>
+        <path d="
+          M8 168
+          C8 168 24 208 74 218
+          C120 227 154 214 160 190
+          C166 168 142 152 108 144
+          C74 136 42 130 36 112
+          C30 96 42 78 66 74
+        " stroke="currentColor" stroke-width="15" stroke-linecap="round" fill="none"/>
+      </svg>
+    </div>
+    <div class="ps3-brand">
+      <div class="ps3-big">PS3</div>
+      <div class="ps3-sub">PlayStation®3</div>
+    </div>
+  </div>
+
+  <div class="splash-warning">
+    <h2>光感受性発作について</h2>
+    <p>てんかんの既往症や発作の経験のある方は、使用する前に必ず医師に相談してください。ある種の映像パターンによっては過去に症状を経験したことがない方でも発作が誘発されてしまう場合があります。取扱説明書をよくお読みの上、正しくお使いください。</p>
+  </div>
+
+  <div class="splash-skip-hint">CLICK / ANY KEY でスキップ</div>
+</div>
+
+<div class="poweroff-screen" id="poweroffScreen">
+  <div class="poweroff-hint">画面をタップして電源を入れる</div>
+</div>
+
+<script>
+const BOOT_SOUND_URL = '';
+const BOOT_TIMING = {
+  initialDelay: 400, logoHold: 3400, transition: 1000,
+  warningHold: 4800, fadeOut: 1200
+};
+
+/* =========================================================
+   アイコン
+   ========================================================= */
+const ICONS = {
+  /* --- カテゴリアイコン --- */
+  user    : '<circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.6-3.9 3.6-6.1 7.2-6.1s6.6 2.2 7.2 6.1"/>',
+  users   : '<circle cx="9" cy="8.2" r="3.2"/><path d="M2.8 19.5c.5-3.5 3-5.5 6.2-5.5s5.7 2 6.2 5.5"/><path d="M16.2 5.4a3.1 3.1 0 0 1 0 5.7"/><path d="M17.6 14c2.1.5 3.5 2 3.9 4.4"/>',
+  gear    : '<circle cx="12" cy="12" r="3.3"/><path d="M12 2.6v2.6M12 18.8v2.6M2.6 12h2.6M18.8 12h2.6M5.4 5.4l1.8 1.8M16.8 16.8l1.8 1.8M18.6 5.4l-1.8 1.8M7.2 16.8l-1.8 1.8"/>',
+  camera  : '<rect x="2.8" y="6.4" width="18.4" height="13" rx="2.6"/><circle cx="12" cy="12.9" r="3.4"/><path d="M8.6 6.4l1.3-2.2h4.2l1.3 2.2"/>',
+  music   : '<path d="M9.2 17.6V5.4L19 3.4v12.2"/><circle cx="6.6" cy="17.8" r="2.6"/><circle cx="16.4" cy="15.8" r="2.6"/>',
+  film    : '<rect x="2.4" y="4.6" width="19.2" height="14.8" rx="2"/><path d="M7 4.6v14.8M17 4.6v14.8M2.4 9.6h4.6M2.4 14.4h4.6M17 9.6h4.6M17 14.4h4.6"/>',
+  tvService:'<rect x="2.4" y="8" width="14" height="10.4" rx="1.6"/><path d="M18 10.5c1.2.5 1.8 1.5 1.7 2.6"/><path d="M20.5 8.4c1.7.9 2.4 2.6 2.2 4.5"/>',
+  game    : '<rect x="2.4" y="7" width="19.2" height="10.2" rx="5.1"/><path d="M7.8 10.6v3M6.3 12.1h3"/><circle cx="15.6" cy="11.1" r="1.05" fill="currentColor" stroke="none"/><circle cx="17.6" cy="13.6" r="1.05" fill="currentColor" stroke="none"/>',
+  globe   : '<circle cx="12" cy="12" r="9"/><path d="M3.2 12h17.6"/><ellipse cx="12" cy="12" rx="4.2" ry="9"/>',
+  ps      : '<circle cx="12" cy="12" r="9"/><path d="M9.4 7.6v8.8M9.4 7.6h4.2a2.6 2.6 0 0 1 0 5.2H9.4"/>',
+
+  /* --- アイテム用 --- */
+  folder  : '<path d="M3 7.4A2.2 2.2 0 0 1 5.2 5.2h4.1l2 2.6h7.5A2.2 2.2 0 0 1 21 10v7.4a2.2 2.2 0 0 1-2.2 2.2H5.2A2.2 2.2 0 0 1 3 17.4z"/>',
+  disc    : '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.8"/>',
+  star    : '<path d="M12 3.6l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 10l6.1-.9z"/>',
+  list    : '<path d="M8.4 6.4h12.2M8.4 12h12.2M8.4 17.6h12.2M3.6 6.4h.01M3.6 12h.01M3.6 17.6h.01"/>',
+  message : '<rect x="2.8" y="5" width="18.4" height="13" rx="2.6"/><path d="M3.8 6.6L12 12.6l8.2-6"/>',
+  download: '<path d="M12 3.4v11.4M7.6 10.6L12 15l4.4-4.4M4.2 19.6h15.6"/>',
+  play    : '<path d="M8 5.6l10.4 6.4L8 18.4z"/>',
+  trophy  : '<path d="M7.4 3.6h9.2v5.2a4.6 4.6 0 0 1-9.2 0z"/><path d="M7.4 5.2H4.6v1.6a2.8 2.8 0 0 0 2.8 2.8M16.6 5.2h2.8v1.6a2.8 2.8 0 0 1-2.8 2.8"/><path d="M12 13.4v2.8M8.6 20.4h6.8l-.7-3.6H9.3z"/>',
+  cart    : '<circle cx="9.6" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/><path d="M2.6 3.6h3l2.6 11h10.2l2.2-8H6"/>',
+  clock   : '<circle cx="12" cy="12" r="9"/><path d="M12 6.6V12l3.6 2.2"/>',
+  plus    : '<path d="M12 5v14M5 12h14"/>',
+  info    : '<circle cx="12" cy="12" r="9"/><path d="M12 10.8v5.6M12 7.8h.01"/>',
+  power   : '<path d="M12 3.5v9"/><path d="M7.6 6.9a7.5 7.5 0 1 0 8.8 0"/>',
+  userPlus: '<circle cx="9.5" cy="8" r="3.1"/><path d="M3.5 19.6c.5-3.3 2.9-5.2 6-5.2 1.3 0 2.5.35 3.5 1"/><path d="M17.5 13.6v5M15 16.1h5"/>',
+  update  : '<path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
+  box     : '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05"/><path d="M12 22.08V12"/>',
+  tv      : '<rect x="2.6" y="6.4" width="18.8" height="12.6" rx="2.2"/><path d="M8 2.8l4 3.6 4-3.6"/>',
+
+  /* --- 新規追加アイコン（参考画像準拠） --- */
+  /* メディアサーバー検索：横線構造 + 虫めがね */
+  mediaSearch:
+    '<path d="M2.5 9.5h8.5M2.5 13h5M2.5 16.5h8.5"/>' +
+    '<path d="M6.8 9.5v7"/>' +
+    '<circle cx="16.5" cy="8.5" r="4.2"/>' +
+    '<path d="M19.6 11.6l2.6 2.6"/>',
+
+  /* プレイリスト：三角 + ライン */
+  playlist:
+    '<path d="M4 6.5v11l7.5-5.5z" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>' +
+    '<path d="M14 8h6.5M14 12h6.5M14 16h6.5"/>',
+
+  /* ビデオ編集 & アップロード：三角 + 縦線 */
+  videoEdit:
+    '<path d="M5 5.5l9.5 6.5L5 18.5z" fill="none"/>' +
+    '<path d="M16.5 5v14"/>' +
+    '<path d="M19 9.5v5"/>',
+
+  /* オンラインマニュアル：？ */
+  question:
+    '<path d="M7.5 8.4a4.5 4.5 0 1 1 6.2 4.2c-1.3.6-2 1.5-2 2.9v.7"/>' +
+    '<circle cx="11.7" cy="18.8" r="0.95" fill="currentColor" stroke="none"/>',
+
+  /* リモートプレイ：横長の端末 */
+  remotePlay:
+    '<rect x="2.6" y="8.4" width="18.8" height="7.2" rx="1.8"/>' +
+    '<path d="M6.6 12h5"/>',
+
+  /* インターネットブラウザー：www */
+  browser:
+    '<text x="12" y="16.4" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" ' +
+    'font-size="10.5" font-weight="700" fill="currentColor" stroke="none">www</text>',
+
+  /* インターネット検索：虫めがね */
+  search:
+    '<circle cx="10.6" cy="10.6" r="6"/>' +
+    '<path d="M15.1 15.1l5.4 5.4"/>',
+
+  /* サインアップ：PS3 本体風アイコン */
+  psnSignup:
+    '<rect x="3.6" y="4.8" width="16.8" height="14.4" rx="1.6"/>' +
+    '<path d="M8.4 9.6l1.8 3 -1.8 3z" fill="currentColor" stroke="none"/>' +
+    '<circle cx="13.6" cy="11.1" r="1.15"/>' +
+    '<path d="M16.2 9.6l2 3M18.2 9.6l-2 3"/>' +
+    '<rect x="8.4" y="14.6" width="2.2" height="2.2" fill="currentColor" stroke="none"/>',
+
+  /* What's New：オレンジの同心円 */
+  whatsNew:
+    '<rect x="4" y="4" width="16" height="16" rx="2.4"/>' +
+    '<circle cx="12" cy="12" r="5"/>' +
+    '<circle cx="12" cy="12" r="2"/>',
+
+  /* PlayStation Store：店アイコン */
+  store:
+    '<path d="M3.6 7.2L5.4 4h13.2l1.8 3.2"/>' +
+    '<path d="M3.6 7.2h16.8v11.6a1.2 1.2 0 0 1-1.2 1.2H4.8a1.2 1.2 0 0 1-1.2-1.2z"/>' +
+    '<path d="M3.6 7.2h16.8"/>' +
+    '<path d="M9.6 12.4h4.8"/>',
+
+  /* ストリーミング系の汎用アイコン */
+  streaming:
+    '<rect x="3" y="5.4" width="18" height="13.2" rx="2"/>' +
+    '<path d="M9.6 10.2l4.8 3-4.8 3z" fill="currentColor" stroke="none"/>',
+
+  /* USER バッジ等に使う顔文字系 */
+  userSmile:
+    '<circle cx="12" cy="12" r="9"/>' +
+    '<circle cx="9" cy="10.5" r="1.1" fill="currentColor" stroke="none"/>' +
+    '<circle cx="15" cy="10.5" r="1.1" fill="currentColor" stroke="none"/>' +
+    '<path d="M8.5 15c1 1.4 2.3 2 3.5 2s2.5-.6 3.5-2"/>'
+};
+
+function svgIcon(name){
+  const p = ICONS[name] || ICONS.disc;
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+}
+
+/* =========================================================
+   XMB データ（PS3 準拠）
+   ---------------------------------------------------------
+   item.sub → 項目名の下に表示される小さなラベル（例：USER）
+   item.desc → 選択中に表示される説明文
+   ========================================================= */
+const DATA = [
+  /* ===================== ユーザー ===================== */
+  { name:'ユーザー', icon:'user', items:[
+    { t:'本体の電源を切る', i:'power', action:{ message:{
+      text: '本体の電源を切りますか？',
+      type: 'confirm', confirmLabel: 'はい', cancelLabel: 'いいえ',
+      onConfirm: () => enterPowerOff()
+    }}},
+    { t:'新しいユーザーの作成', i:'userPlus', action:{ message:{
+      text: '新しいユーザーを作成しますか？',
+      type: 'confirm', confirmLabel: 'はい', cancelLabel: 'いいえ',
+      onConfirm: () => showToast('ユーザー作成画面へ')
+    }}},
+    { t:'USER', i:'user', action:{ message:{
+      text: 'USER としてサインインしています。', type: 'info'
+    }}}
+  ]},
+
+  /* ===================== 設定 ===================== */
+  { name:'設定', icon:'gear', items:[
+    { t:'システムアップデート', i:'update',
+      desc:'本機のシステムソフトウェアをアップデートします。',
+      action:{ menu:[
+        { t:'アップデート', i:'download',
+          desc:'最新のシステムソフトウェアに更新します。',
+          action:{ message:{
+            text:'システムソフトウェアをアップデートしますか？',
+            type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ'
+          }}
+        },
+        { t:'自動ダウンロード', i:'gear', value:'切' },
+        { t:'アップデート履歴', i:'list' }
+      ]}
+    },
+    { t:'ゲーム設定', i:'game', action:{ menu:[
+      { t:'ゲームの自動起動', i:'play',   value:'入' },
+      { t:'トロフィー通知',   i:'trophy', value:'入' },
+      { t:'ゲームデータ管理', i:'folder' }
+    ]}},
+    { t:'ビデオ設定', i:'film', action:{ menu:[
+      { t:'BD/DVD 映像出力', i:'tv' },
+      { t:'BD 音声出力',     i:'music' },
+      { t:'DVD リモートコード', i:'info', value:'1' }
+    ]}},
+    { t:'ミュージック設定', i:'music', action:{ menu:[
+      { t:'再生モード',   i:'play',  value:'通常' },
+      { t:'イコライザー', i:'music', value:'切' }
+    ]}},
+    { t:'チャット設定', i:'message', action:{ menu:[
+      { t:'チャット音設定', i:'music', value:'入' },
+      { t:'入力履歴',       i:'list' }
+    ]}},
+    { t:'本体設定', i:'box', action:{ menu:[
+      { t:'自動アップデート', i:'download', value:'切',
+        desc:'本機を自動的に起動し、ゲームのパッチをダウンロードしたり、更新されたセーブデータをオンラインストレージにアップロードしたり、トロフィー情報をサーバーと同期したりします。' },
+      { t:'機器名称',         i:'info',   value:'PS3-720' },
+      { t:'表示言語',         i:'globe',  value:'日本語' },
+      { t:'文字セット',       i:'list' },
+      { t:'単語の登録／編集', i:'list' },
+      { t:'学習辞書の削除',   i:'download' },
+      { t:'通知メッセージ',   i:'message', value:'表示する' }
+    ]}},
+    { t:'テーマ設定', i:'star', action:{ menu:[
+      { t:'テーマ',   i:'star', value:'オリジナル' },
+      { t:'背景色',   i:'star', value:'青色' },
+      { t:'フォント', i:'list' }
+    ]}},
+    { t:'日付と時刻設定', i:'clock', action:{ menu:[
+      { t:'日付と時刻',   i:'clock' },
+      { t:'タイムゾーン', i:'clock', value:'GMT+09:00' },
+      { t:'夏時間',       i:'clock', value:'切' },
+      { t:'時刻表示形式', i:'clock', value:'24時間' }
+    ]}},
+    { t:'省電力設定', i:'power', action:{ menu:[
+      { t:'自動電源オフ',                 i:'power', value:'切' },
+      { t:'コントローラーの自動電源オフ', i:'game',  value:'10分後' }
+    ]}},
+    { t:'周辺機器設定', i:'game', action:{ menu:[
+      { t:'コントローラー設定', i:'game' },
+      { t:'Bluetooth機器',      i:'game' },
+      { t:'カメラ設定',         i:'camera' }
+    ]}},
+    { t:'プリンター設定', i:'info', action:{ menu:[
+      { t:'プリンターを追加', i:'plus' }
+    ]}},
+    { t:'ディスプレイ設定', i:'tv', action:{ menu:[
+      { t:'映像出力設定', i:'tv' },
+      { t:'画面サイズ',   i:'tv', value:'16:9' },
+      { t:'壁紙',         i:'star' }
+    ]}},
+    { t:'サウンド設定', i:'music', action:{ menu:[
+      { t:'音量',     i:'music' },
+      { t:'出力設定', i:'music' },
+      { t:'ビープ音', i:'music', value:'入' }
+    ]}},
+    { t:'セキュリティー設定', i:'gear', action:{ menu:[
+      { t:'パスワード設定',   i:'gear' },
+      { t:'親による制限',     i:'user' },
+      { t:'プライバシー設定', i:'globe' }
+    ]}},
+    { t:'リモートプレイ設定', i:'tv', action:{ menu:[
+      { t:'リモートプレイ', i:'tv', value:'入' },
+      { t:'接続方法',       i:'globe' }
+    ]}},
+    { t:'ネットワーク設定', i:'globe', action:{ menu:[
+      { t:'インターネット接続', i:'globe' },
+      { t:'接続テスト',         i:'download' },
+      { t:'Wi-Fi設定',          i:'globe' }
+    ]}}
+  ]},
+
+  /* ===================== フォト ===================== */
+  { name:'フォト', icon:'camera', items:[
+    { t:'メディアサーバー検索', i:'mediaSearch',
+      action:{ message:{ text:'ネットワーク上のメディアサーバーを検索します。', type:'info' } } },
+    { t:'フォトギャラリー', i:'folder',
+      action:{ menu:[
+        { t:'すべての写真', i:'camera' },
+        { t:'お気に入り',   i:'star' }
+      ]}
+    },
+    { t:'プレイリスト', i:'playlist',
+      action:{ menu:[
+        { t:'スライドショー', i:'play' },
+        { t:'BGM 設定',       i:'music' }
+      ]}
+    }
+  ]},
+
+  /* ===================== ミュージック ===================== */
+  { name:'ミュージック', icon:'music', items:[
+    { t:'メディアサーバー検索', i:'mediaSearch',
+      action:{ message:{ text:'ネットワーク上のメディアサーバーを検索します。', type:'info' } } },
+    { t:'プレイリスト', i:'playlist',
+      action:{ menu:[
+        { t:'プレイリスト 1', i:'list' },
+        { t:'プレイリスト 2', i:'list' },
+        { t:'新規プレイリスト', i:'plus' }
+      ]}
+    }
+  ]},
+
+  /* ===================== ビデオ ===================== */
+  { name:'ビデオ', icon:'film', items:[
+    { t:'BDデータ管理', i:'folder',
+      action:{ menu:[
+        { t:'BD データ',       i:'disc' },
+        { t:'BD データ (USB)', i:'download' }
+      ]}
+    },
+    { t:'メディアサーバー検索', i:'mediaSearch',
+      action:{ message:{ text:'ネットワーク上のメディアサーバーを検索します。', type:'info' } } },
+    { t:'ビデオ編集 & アップロード', i:'videoEdit',
+      action:{ message:{ text:'ビデオの編集・アップロードを行います。', type:'info' } } }
+  ]},
+
+  /* ===================== テレビ/ビデオサービス ===================== */
+  { name:'テレビ/ビデオサービス', icon:'tvService', items:[
+    { t:'Netflix', i:'streaming',
+      action:{ message:{ text:'Netflix を起動しますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } },
+    { t:'YouTube', i:'streaming',
+      action:{ message:{ text:'YouTube を起動しますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } },
+    { t:'Amazon Prime Video', i:'streaming',
+      action:{ message:{ text:'Amazon Prime Video を起動しますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } },
+    { t:'U-NEXT', i:'streaming',
+      action:{ message:{ text:'U-NEXT を起動しますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } }
+  ]},
+
+  /* ===================== ゲーム ===================== */
+  { name:'ゲーム', icon:'game', items:[
+    { t:'PS Vitaアプリケーション管理', i:'folder', sub:'USER',
+      action:{ menu:[
+        { t:'PS Vita アプリ', i:'game' },
+        { t:'PS Vita セーブデータ', i:'folder' }
+      ]}
+    },
+    { t:'ゲームデータ管理', i:'folder',
+      action:{ menu:[
+        { t:'ゲームデータ (本体)', i:'disc' },
+        { t:'ゲームデータ (USB)',  i:'download' }
+      ]}
+    },
+    { t:'メモリーカード管理', i:'folder',
+      action:{ menu:[
+        { t:'メモリーカード (スロット 1)', i:'disc' },
+        { t:'メモリーカード (スロット 2)', i:'disc' }
+      ]}
+    },
+    { t:'セーブデータ管理 (minis/PSP™)', i:'folder', sub:'USER',
+      action:{ menu:[
+        { t:'セーブデータ (本体)', i:'folder' },
+        { t:'セーブデータ (USB)',  i:'folder' }
+      ]}
+    },
+    { t:'セーブデータ管理 (PS3™)', i:'folder', sub:'USER',
+      action:{ menu:[
+        { t:'セーブデータ (本体)', i:'folder' },
+        { t:'セーブデータ (USB)',  i:'folder' }
+      ]}
+    },
+    { t:'PlayStation®Store', i:'store',
+      action:{ message:{ text:'PlayStation Store を起動しますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } }
+  ]},
+
+  /* ===================== ネットワーク ===================== */
+  { name:'ネットワーク', icon:'globe', items:[
+    { t:'オンラインマニュアル', i:'question',
+      action:{ message:{ text:'オンラインマニュアルを表示します。', type:'info' } } },
+    { t:'リモートプレイ', i:'remotePlay',
+      action:{ message:{ text:'リモートプレイを開始します。', type:'info' } } },
+    { t:'インターネットブラウザー', i:'browser',
+      action:{ message:{ text:'インターネットブラウザーを起動しますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } },
+    { t:'インターネット検索', i:'search',
+      action:{ message:{ text:'インターネット検索を開始します。', type:'info' } } }
+  ]},
+
+  /* ===================== PlayStation Network ===================== */
+  { name:'PlayStation Network', icon:'ps', items:[
+    { t:'サインアップ', i:'psnSignup',
+      action:{ message:{ text:'PlayStation Network にサインアップしますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } },
+    { t:"What's New", i:'whatsNew',
+      action:{ message:{ text:"What's New を表示します。", type:'info' } } },
+    { t:'トロフィーコレクション', i:'trophy',
+      action:{ message:{ text:'獲得したトロフィーを表示します。', type:'info' } } },
+    { t:'PlayStation®Plus', i:'plus',
+      action:{ message:{ text:'PlayStation Plus の詳細を表示します。', type:'info' } } },
+    { t:'PlayStation®Store', i:'store',
+      action:{ message:{ text:'PlayStation Store を起動しますか？', type:'confirm', confirmLabel:'はい', cancelLabel:'いいえ' } } }
+  ]},
+
+  /* ===================== フレンド ===================== */
+  { name:'フレンド', icon:'users', items:[
+    { t:'フレンドリスト', i:'users', action:{ menu:[
+      { t:'オンライン', i:'users' },
+      { t:'オフライン', i:'users' }
+    ]}},
+    { t:'メッセージ', i:'message', action:{ message:{ text:'新着メッセージはありません。', type:'info' } } },
+    { t:'チャット',   i:'message', action:{ message:{ text:'チャットを開始します。', type:'info' } } },
+    { t:'招待',       i:'plus',    action:{ message:{ text:'招待はありません。', type:'info' } } }
+  ]}
+];
+
+/* =========================================================
+   定数 / 状態
+   ========================================================= */
+const CAT_W = 116;
+const ITEM_H = 88;
+const ITEM_OFFSET = 86;
+
+const state = {
+  cat: 0,
+  idx: DATA.map(() => 0),
+  mode: 'xmb',
+  sub: { items: [], index: 0 },
+  subStack: [],
+  overlay: null,
+  overlayOptions: [],
+  overlaySelection: 0,
+  prevMode: 'xmb'
+};
+
+/* =========================================================
+   DOM 参照
+   ========================================================= */
+const stage    = document.getElementById('stage');
+const toastEl  = document.getElementById('toast');
+const clockEl  = document.getElementById('clock');
+const dateEl   = document.getElementById('date');
+const hintEl   = document.getElementById('hint');
+const splashEl = document.getElementById('splash');
+const poweroffEl = document.getElementById('poweroffScreen');
+
+const overlayEl  = document.getElementById('overlay');
+const ovTextEl   = document.getElementById('ovText');
+const ovOptionsEl= document.getElementById('ovOptions');
+const ovFooterEl = document.getElementById('ovFooter');
+
+const submenuEl = document.createElement('div');
+submenuEl.className = 'submenu';
+stage.appendChild(submenuEl);
+
+const catEls     = [];
+const itemGroups = [];
+
+DATA.forEach((cat, ci) => {
+  /* --- カテゴリ --- */
+  const el = document.createElement('div');
+  el.className = 'cat';
+  el.innerHTML =
+    `<div class="cat-icon">${svgIcon(cat.icon)}</div>` +
+    `<div class="cat-label">${cat.name}</div>`;
+  el.addEventListener('click', ev => {
+    ev.stopPropagation();
+    ensureAudio();
+    if (isBooting() || state.mode !== 'xmb') return;
+    if (state.cat === ci) return;
+    state.cat = ci;
+    sfx('move');
+    render();
+  });
+  stage.appendChild(el);
+  catEls.push(el);
+
+  /* --- 項目 --- */
+  const wrap = document.createElement('div');
+  wrap.className = 'items';
+
+  const els = cat.items.map((it, ii) => {
+    const ie = document.createElement('div');
+    ie.className = 'item';
+    ie.innerHTML =
+      `<div class="item-icon">${svgIcon(it.i)}</div>` +
+      `<div class="item-label">` +
+        `<span class="item-name">${it.t}</span>` +
+        (it.sub ? `<span class="item-sub">${it.sub}</span>` : '') +
+      `</div>` +
+      (it.desc ? `<div class="item-desc">${it.desc}</div>` : '');
+
+    ie.addEventListener('click', ev => {
+      ev.stopPropagation();
+      ensureAudio();
+      if (isBooting() || state.mode !== 'xmb') return;
+      state.idx[ci] = ii;
+      render();
+      confirm();
+    });
+    wrap.appendChild(ie);
+    return ie;
+  });
+
+  stage.appendChild(wrap);
+  itemGroups.push({ wrap, els });
+});
+
+/* =========================================================
+   XMB 描画
+   ========================================================= */
+function render(){
+  const c = state.cat;
+
+  catEls.forEach((el, i) => {
+    const d  = i - c;
+    const ad = Math.abs(d);
+    const x  = d * CAT_W;
+    const sc = d === 0 ? 1 : (ad === 1 ? 0.86 : 0.74);
+    const op = d === 0 ? 1 : Math.max(0.12, 0.6 - (ad - 1) * 0.13);
+
+    el.style.transform = `translate(-50%,-50%) translateX(${x}px) scale(${sc})`;
+    el.style.opacity   = op;
+    el.style.zIndex    = 30 - ad;
+    el.classList.toggle('active', d === 0);
+  });
+
+  itemGroups.forEach((g, gi) => {
+    const active = gi === c;
+    g.wrap.classList.toggle('active', active);
+
+    const sel = state.idx[gi];
+    g.els.forEach((el, i) => {
+      const k  = i - sel;
+      const y  = k * ITEM_H + ITEM_OFFSET;
+      const sc = (k === 0) ? 1 : 0.88;
+      const op = k < 0
+        ? Math.max(0, 1 + k * 0.45)
+        : Math.max(0, 1 - k * 0.16);
+
+      el.style.transform = `translate(0, calc(-50% + ${y}px)) scale(${sc})`;
+      el.style.opacity   = op;
+      el.classList.toggle('sel', k === 0);
+      el.style.pointerEvents = (k >= 0 && k <= 6) ? 'auto' : 'none';
+    });
+  });
+}
+
+/* =========================================================
+   サブメニュー
+   ========================================================= */
+function openSubmenu(menu){
+  if (state.mode === 'submenu'){
+    state.subStack.push({ items: state.sub.items, index: state.sub.index });
+  }
+  state.mode = 'submenu';
+  state.sub  = { items: menu, index: 0 };
+  renderSubmenu();
+  requestAnimationFrame(() => positionSubmenu());
+  submenuEl.classList.add('active');
+  updateHint();
+  sfx('ok');
+}
+
+function renderSubmenu(){
+  submenuEl.innerHTML = '';
+  state.sub.items.forEach((it, i) => {
+    const el = document.createElement('div');
+    el.className = 'sub-item' + (i === state.sub.index ? ' sel' : '');
+    el.innerHTML =
+      `<div class="sub-icon">${svgIcon(it.i || 'disc')}</div>` +
+      `<div class="sub-body">` +
+        `<div class="sub-top">` +
+          `<div class="sub-label">${it.t}</div>` +
+          (it.value != null ? `<div class="sub-value">${it.value}</div>` : '') +
+        `</div>` +
+        (it.desc ? `<div class="sub-desc">${it.desc}</div>` : '') +
+      `</div>`;
+
+    el.addEventListener('mouseenter', () => {
+      if (state.mode !== 'submenu') return;
+      state.sub.index = i;
+      updateSubSelection();
+    });
+    el.addEventListener('click', ev => {
+      ev.stopPropagation();
+      ensureAudio();
+      if (isBooting() || state.mode !== 'submenu') return;
+      state.sub.index = i;
+      updateSubSelection();
+      confirmSub();
+    });
+
+    submenuEl.appendChild(el);
+  });
+}
+
+function updateSubSelection(){
+  const els = submenuEl.querySelectorAll('.sub-item');
+  els.forEach((el, i) => el.classList.toggle('sel', i === state.sub.index));
+}
+
+function positionSubmenu(){
+  const selEl = itemGroups[state.cat].els[state.idx[state.cat]];
+  if (!selEl) return;
+  const labelEl = selEl.querySelector('.item-label');
+  if (!labelEl) return;
+
+  const labelRect = labelEl.getBoundingClientRect();
+  const itemRect  = selEl.getBoundingClientRect();
+
+  const subLeft = labelRect.right + 34;
+  const subTop  = itemRect.top + itemRect.height / 2;
+  const maxLeft = window.innerWidth - 480;
+
+  submenuEl.style.left = Math.min(subLeft, maxLeft) + 'px';
+  submenuEl.style.top  = subTop + 'px';
+}
+
+function closeSubmenu(){
+  sfx('back');
+  if (state.subStack.length > 0){
+    const prev = state.subStack.pop();
+    state.sub = prev;
+    renderSubmenu();
+    requestAnimationFrame(() => positionSubmenu());
+    return;
+  }
+  state.mode = 'xmb';
+  submenuEl.classList.remove('active');
+  updateHint();
+}
+
+function moveSub(dir){
+  const ni = state.sub.index + dir;
+  if (ni < 0 || ni >= state.sub.items.length){ sfx('edge'); return; }
+  state.sub.index = ni;
+  updateSubSelection();
+  sfx('move');
+}
+
+function confirmSub(){
+  const item = state.sub.items[state.sub.index];
+  if (item.action && item.action.menu){ openSubmenu(item.action.menu); return; }
+  if (item.action && item.action.message){
+    sfx('ok'); showOverlay(item.action.message); return;
+  }
+  sfx('ok'); showToast(item.t); flashSubItem();
+}
+
+function flashSubItem(){
+  const el = submenuEl.querySelectorAll('.sub-item')[state.sub.index];
+  if (el && el.animate){
+    el.animate(
+      [ { filter:'brightness(2.4) drop-shadow(0 0 18px rgba(180,230,255,.95))' },
+        { filter:'brightness(1)' } ],
+      { duration: 420, easing:'ease-out' }
+    );
+  }
+}
+
+/* =========================================================
+   PS3 風オーバーレイ
+   ========================================================= */
+function showOverlay(msg){
+  state.prevMode = state.mode;
+  state.mode = 'overlay';
+  state.overlay = msg;
+
+  ovTextEl.textContent = msg.text || '';
+
+  let opts;
+  if (msg.type === 'info'){
+    opts = [ msg.okLabel || 'OK' ];
+  } else {
+    opts = [ msg.confirmLabel || 'はい', msg.cancelLabel || 'いいえ' ];
+  }
+  state.overlayOptions   = opts;
+  state.overlaySelection = 0;
+
+  renderOverlayOptions();
+  renderOverlayFooter(msg.type === 'info');
+  document.body.classList.add('overlay-on');
+  updateHint();
+}
+
+function renderOverlayOptions(){
+  ovOptionsEl.innerHTML = '';
+  state.overlayOptions.forEach((label, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'overlay-opt' + (i === state.overlaySelection ? ' sel' : '');
+    btn.textContent = label;
+    btn.addEventListener('mouseenter', () => {
+      if (state.mode !== 'overlay') return;
+      state.overlaySelection = i;
+      updateOverlaySelection();
+    });
+    btn.addEventListener('click', ev => {
+      ev.stopPropagation();
+      ensureAudio();
+      if (state.mode !== 'overlay') return;
+      state.overlaySelection = i;
+      updateOverlaySelection();
+      confirmOverlay();
+    });
+    ovOptionsEl.appendChild(btn);
+  });
+}
+
+function renderOverlayFooter(isInfo){
+  if (isInfo){
+    ovFooterEl.innerHTML =
+      `<div class="footer-hint"><span class="btn-icon">✕</span><span>OK</span></div>`;
+  } else {
+    ovFooterEl.innerHTML =
+      `<div class="footer-hint"><span class="btn-icon">✕</span><span>決定</span></div>` +
+      `<div class="footer-hint"><span class="btn-icon">○</span><span>戻る</span></div>`;
+  }
+}
+
+function updateOverlaySelection(){
+  const els = ovOptionsEl.querySelectorAll('.overlay-opt');
+  els.forEach((el, i) => el.classList.toggle('sel', i === state.overlaySelection));
+}
+
+function moveOverlay(dir){
+  const n = state.overlayOptions.length;
+  if (n < 2) return;
+  state.overlaySelection = (state.overlaySelection + dir + n) % n;
+  updateOverlaySelection();
+  sfx('move');
+}
+
+function confirmOverlay(){
+  const msg = state.overlay;
+  if (!msg) return;
+  if (msg.type === 'info'){
+    sfx('ok'); hideOverlay();
+    if (msg.onConfirm) msg.onConfirm();
+    return;
+  }
+  if (state.overlaySelection === 0){
+    sfx('ok'); hideOverlay();
+    if (msg.onConfirm) msg.onConfirm();
+    else showToast('実行しました');
+  } else {
+    sfx('back'); hideOverlay();
+    if (msg.onCancel) msg.onCancel();
+  }
+}
+
+function cancelOverlay(){
+  const msg = state.overlay;
+  if (!msg) return;
+  sfx('back'); hideOverlay();
+  if (msg.onCancel) msg.onCancel();
+}
+
+function hideOverlay(){
+  document.body.classList.remove('overlay-on');
+  const was = state.prevMode || 'xmb';
+  state.mode = was;
+  state.overlay = null;
+
+  if (was === 'xmb'){
+    submenuEl.classList.remove('active');
+    state.subStack = [];
+  } else if (was === 'submenu'){
+    requestAnimationFrame(() => positionSubmenu());
+  }
+  updateHint();
+}
+
+/* =========================================================
+   決定 / 戻る
+   ========================================================= */
+function confirm(){
+  if (state.mode !== 'xmb') return;
+  const cat  = DATA[state.cat];
+  const item = cat.items[state.idx[state.cat]];
+
+  if (item.action && item.action.menu){ openSubmenu(item.action.menu); return; }
+  if (item.action && item.action.message){
+    sfx('ok'); showOverlay(item.action.message); return;
+  }
+  sfx('ok');
+  showToast(`${cat.name}　›　${item.t}`);
+  flashItem();
+}
+
+function back(){ sfx('back'); showToast('戻る'); }
+
+function flashItem(){
+  const el = itemGroups[state.cat].els[state.idx[state.cat]];
+  if (el && el.animate){
+    el.animate(
+      [ { filter:'brightness(2.6) drop-shadow(0 0 22px rgba(180,230,255,.95))' },
+        { filter:'brightness(1)' } ],
+      { duration: 420, easing:'ease-out' }
+    );
+  }
+}
+
+/* =========================================================
+   ヒント / トースト
+   ========================================================= */
+function updateHint(){
+  if (state.mode === 'overlay'){
+    hintEl.textContent = '← → 選択　Enter 決定　Esc 戻る';
+  } else if (state.mode === 'submenu'){
+    hintEl.textContent = '↑ ↓ 選択　Enter 決定　Esc 戻る';
+  } else {
+    hintEl.textContent = '← → カテゴリ　↑ ↓ 項目　Enter 決定　Esc 戻る';
+  }
+}
+
+let toastTimer;
+function showToast(text){
+  toastEl.textContent = text;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1700);
+}
+
+/* =========================================================
+   サウンド
+   ========================================================= */
+let actx = null;
+function ensureAudio(){
+  if (!actx){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) { try { actx = new AC(); } catch(e){ actx = null; } }
+  }
+  if (actx && actx.state === 'suspended') actx.resume().catch(()=>{});
+}
+function tone(freq, dur, type, gain, slideTo, delay){
+  if (!actx || actx.state !== 'running') return;
+  const t0 = actx.currentTime + (delay || 0);
+  const osc = actx.createOscillator();
+  const g   = actx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.setValueAtTime(freq, t0);
+  if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.linearRampToValueAtTime(gain, t0 + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc.connect(g); g.connect(actx.destination);
+  osc.start(t0); osc.stop(t0 + dur + 0.03);
+}
+function sfx(kind){
+  if (!actx || actx.state !== 'running') return;
+  switch(kind){
+    case 'move':  tone(1350, 0.055, 'sine', 0.045, 950); tone(2700, 0.03, 'sine', 0.014, 2000); break;
+    case 'ok':    tone(880, 0.09, 'sine', 0.06); tone(1320, 0.16, 'sine', 0.05, null, 0.07); break;
+    case 'back':  tone(760, 0.10, 'sine', 0.05, 430); break;
+    case 'edge':  tone(180, 0.07, 'square', 0.016, 130); break;
+  }
+}
+
+function playSynthBootSound(){
+  if (!actx || actx.state !== 'running') return;
+  const t0 = actx.currentTime;
+
+  const bass = actx.createOscillator();
+  const bassG = actx.createGain();
+  bass.type = 'sine';
+  bass.frequency.setValueAtTime(38, t0);
+  bass.frequency.exponentialRampToValueAtTime(72, t0 + 2.6);
+  bass.frequency.exponentialRampToValueAtTime(52, t0 + 5.2);
+  bassG.gain.setValueAtTime(0.0001, t0);
+  bassG.gain.linearRampToValueAtTime(0.14, t0 + 0.9);
+  bassG.gain.linearRampToValueAtTime(0.09, t0 + 3.2);
+  bassG.gain.exponentialRampToValueAtTime(0.0001, t0 + 6.0);
+  bass.connect(bassG).connect(actx.destination);
+  bass.start(t0); bass.stop(t0 + 6.2);
+
+  const mid = actx.createOscillator();
+  const midG = actx.createGain();
+  mid.type = 'triangle';
+  mid.frequency.setValueAtTime(110, t0);
+  mid.frequency.exponentialRampToValueAtTime(168, t0 + 2.6);
+  mid.frequency.exponentialRampToValueAtTime(132, t0 + 5.2);
+  midG.gain.setValueAtTime(0.0001, t0);
+  midG.gain.linearRampToValueAtTime(0.032, t0 + 1.3);
+  midG.gain.linearRampToValueAtTime(0.018, t0 + 3.2);
+  midG.gain.exponentialRampToValueAtTime(0.0001, t0 + 6.0);
+  mid.connect(midG).connect(actx.destination);
+  mid.start(t0); mid.stop(t0 + 6.2);
+
+  [880, 1174.66, 1760].forEach((freq, i) => {
+    const osc = actx.createOscillator();
+    const g   = actx.createGain();
+    osc.type = 'sine';
+    const st = t0 + 0.45 + i * 0.09;
+    osc.frequency.setValueAtTime(freq, st);
+    g.gain.setValueAtTime(0.0001, st);
+    g.gain.linearRampToValueAtTime(0.055 - i * 0.014, st + 0.08);
+    g.gain.exponentialRampToValueAtTime(0.0001, st + 2.4 + i * 0.25);
+    osc.connect(g).connect(actx.destination);
+    osc.start(st); osc.stop(st + 3.0);
+  });
+
+  const shim = actx.createOscillator();
+  const shimG = actx.createGain();
+  shim.type = 'sine';
+  shim.frequency.setValueAtTime(2000, t0 + 2.3);
+  shim.frequency.exponentialRampToValueAtTime(4200, t0 + 3.4);
+  shimG.gain.setValueAtTime(0.0001, t0 + 2.3);
+  shimG.gain.linearRampToValueAtTime(0.022, t0 + 2.5);
+  shimG.gain.exponentialRampToValueAtTime(0.0001, t0 + 3.8);
+  shim.connect(shimG).connect(actx.destination);
+  shim.start(t0 + 2.3); shim.stop(t0 + 3.9);
+}
+
+function playBootSound(){
+  ensureAudio();
+  if (BOOT_SOUND_URL){
+    try {
+      const audio = new Audio(BOOT_SOUND_URL);
+      audio.volume = 0.85;
+      const p = audio.play();
+      if (p && p.catch) p.catch(() => playSynthBootSound());
+      return;
+    } catch(e){}
+  }
+  playSynthBootSound();
+}
+
+/* =========================================================
+   起動シーケンス
+   ========================================================= */
+let bootState = 'idle';
+function isBooting(){ return bootState === 'running'; }
+function wait(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+async function runBootSequence(){
+  if (bootState === 'running') return;
+  bootState = 'running';
+
+  splashEl.style.display = '';
+  splashEl.classList.remove('hide', 'logo-in', 'warning-in', 'warning-phase');
+  document.body.classList.add('booting');
+  void splashEl.offsetWidth;
+
+  await wait(BOOT_TIMING.initialDelay);
+  if (bootState !== 'running') return;
+  splashEl.classList.add('logo-in');
+  playBootSound();
+
+  await wait(BOOT_TIMING.logoHold);
+  if (bootState !== 'running') return;
+  splashEl.classList.remove('logo-in');
+  splashEl.classList.add('warning-phase');
+
+  await wait(BOOT_TIMING.transition);
+  if (bootState !== 'running') return;
+  splashEl.classList.add('warning-in');
+
+  await wait(BOOT_TIMING.warningHold);
+  if (bootState !== 'running') return;
+  finishBoot();
+}
+
+function finishBoot(){
+  if (bootState === 'done') return;
+  bootState = 'done';
+  splashEl.classList.remove('logo-in', 'warning-in');
+  splashEl.classList.add('hide');
+  document.body.classList.remove('booting');
+  setTimeout(() => {
+    if (splashEl) splashEl.style.display = 'none';
+  }, BOOT_TIMING.fadeOut + 300);
+  updateHint();
+}
+
+function skipBoot(){
+  if (bootState !== 'running') return;
+  bootState = 'skipped';
+  finishBoot();
+}
+
+/* =========================================================
+   電源OFF / ON
+   ========================================================= */
+let powerOffReady = false;
+
+function enterPowerOff(){
+  sfx('back');
+  powerOffReady = false;
+  document.body.classList.add('booting');
+  submenuEl.classList.remove('active');
+  state.mode = 'xmb';
+  state.subStack = [];
+
+  poweroffEl.classList.add('active');
+  poweroffEl.classList.remove('show-hint');
+
+  setTimeout(() => { poweroffEl.classList.add('show-hint'); }, 1600);
+  setTimeout(() => { powerOffReady = true; }, 2000);
+}
+
+function exitPowerOff(){
+  if (!powerOffReady) return;
+  powerOffReady = false;
+  poweroffEl.classList.remove('active', 'show-hint');
+  setTimeout(() => {
+    bootState = 'idle';
+    runBootSequence();
+  }, 500);
+}
+
+/* =========================================================
+   入力
+   ========================================================= */
+document.addEventListener('keydown', e => {
+  if (poweroffEl.classList.contains('active')){ e.preventDefault(); exitPowerOff(); return; }
+  if (isBooting()){ e.preventDefault(); skipBoot(); return; }
+  ensureAudio();
+
+  if (state.mode === 'overlay'){
+    if (e.key === 'ArrowLeft')       { e.preventDefault(); moveOverlay(-1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); moveOverlay(1); }
+    else if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); confirmOverlay(); }
+    else if (e.key === 'Escape' || e.key === 'Backspace'){
+      e.preventDefault();
+      if (state.overlayOptions.length > 1) cancelOverlay();
+      else { sfx('back'); hideOverlay(); }
+    }
+    return;
+  }
+  if (state.mode === 'submenu'){
+    if (e.key === 'ArrowUp')    { e.preventDefault(); moveSub(-1); }
+    else if (e.key === 'ArrowDown')  { e.preventDefault(); moveSub(1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'Escape' || e.key === 'Backspace'){
+      e.preventDefault(); closeSubmenu();
+    }
+    else if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); confirmSub(); }
+    return;
+  }
+  switch(e.key){
+    case 'ArrowLeft':  e.preventDefault(); moveCat(-1); break;
+    case 'ArrowRight': e.preventDefault(); moveCat(1);  break;
+    case 'ArrowUp':    e.preventDefault(); moveItem(-1); break;
+    case 'ArrowDown':  e.preventDefault(); moveItem(1);  break;
+    case 'Enter':
+    case ' ':          e.preventDefault(); confirm(); break;
+    case 'Escape':
+    case 'Backspace':  e.preventDefault(); back(); break;
+  }
+});
+
+document.addEventListener('click', e => {
+  if (poweroffEl.classList.contains('active')){ e.stopPropagation(); e.preventDefault(); exitPowerOff(); return; }
+  if (isBooting()){ e.stopPropagation(); e.preventDefault(); skipBoot(); return; }
+  ensureAudio();
+}, true);
+
+let wheelLock = false;
+window.addEventListener('wheel', e => {
+  if (poweroffEl.classList.contains('active')){ exitPowerOff(); return; }
+  if (isBooting()){ skipBoot(); return; }
+  ensureAudio();
+  if (state.mode === 'overlay') return;
+  if (wheelLock) return;
+  wheelLock = true;
+  setTimeout(() => wheelLock = false, 90);
+
+  if (state.mode === 'submenu'){ moveSub(e.deltaY > 0 ? 1 : -1); return; }
+  if (Math.abs(e.deltaY) >= Math.abs(e.deltaX)) moveItem(e.deltaY > 0 ? 1 : -1);
+  else                                          moveCat(e.deltaX > 0 ? 1 : -1);
+}, { passive: true });
+
+let touchX = 0, touchY = 0;
+window.addEventListener('touchstart', e => {
+  if (poweroffEl.classList.contains('active') || isBooting()){
+    touchX = e.touches[0].clientX; touchY = e.touches[0].clientY; return;
+  }
+  ensureAudio();
+  touchX = e.touches[0].clientX; touchY = e.touches[0].clientY;
+}, { passive: true });
+
+window.addEventListener('touchend', e => {
+  if (poweroffEl.classList.contains('active')){ exitPowerOff(); return; }
+  if (isBooting()){ skipBoot(); return; }
+  if (state.mode === 'overlay') return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  const dy = e.changedTouches[0].clientY - touchY;
+  if (Math.abs(dx) < 42 && Math.abs(dy) < 42) return;
+  if (state.mode === 'submenu'){ moveSub(dy < 0 ? 1 : -1); return; }
+  if (Math.abs(dx) > Math.abs(dy)) moveCat(dx < 0 ? 1 : -1);
+  else                             moveItem(dy < 0 ? 1 : -1);
+}, { passive: true });
+
+/* =========================================================
+   ナビゲーション
+   ========================================================= */
+function moveCat(dir){
+  if (state.mode !== 'xmb') return;
+  const ni = state.cat + dir;
+  if (ni < 0 || ni >= DATA.length){ sfx('edge'); bump(dir, 0); return; }
+  state.cat = ni; sfx('move'); render();
+}
+function moveItem(dir){
+  if (state.mode !== 'xmb') return;
+  const cat = DATA[state.cat];
+  const ni  = state.idx[state.cat] + dir;
+  if (ni < 0 || ni >= cat.items.length){ sfx('edge'); bump(0, dir); return; }
+  state.idx[state.cat] = ni; sfx('move'); render();
+}
+function bump(dx, dy){
+  if (!stage.animate) return;
+  stage.animate(
+    [ { transform:'translate(0,0)' },
+      { transform:`translate(${dx*7}px, ${(dy||0)*5}px)` },
+      { transform:'translate(0,0)' } ],
+    { duration: 190, easing:'ease-out' }
+  );
+}
+
+/* =========================================================
+   時計
+   ========================================================= */
+const WEEK = '日月火水木金土';
+function tickClock(){
+  const d  = new Date();
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  clockEl.textContent = `${hh}:${mm}`;
+  dateEl.textContent  = `${d.getMonth() + 1}月${d.getDate()}日 (${WEEK[d.getDay()]})`;
+}
+tickClock();
+setInterval(tickClock, 10000);
+
+/* =========================================================
+   背景波形
+   ========================================================= */
+const canvas = document.getElementById('bg');
+const ctx    = canvas.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+
+function resizeCanvas(){
+  DPR = Math.min(window.devicePixelRatio || 1, 1.5);
+  W = canvas.width  = Math.max(1, Math.floor(innerWidth  * DPR));
+  H = canvas.height = Math.max(1, Math.floor(innerHeight * DPR));
+  canvas.style.width  = innerWidth  + 'px';
+  canvas.style.height = innerHeight + 'px';
+}
+window.addEventListener('resize', () => {
+  resizeCanvas(); render();
+  if (state.mode === 'submenu') positionSubmenu();
+});
+resizeCanvas();
+
+function drawRibbon(time, idx, hue){
+  const N     = 64;
+  const amp   = H * (0.085 + idx * 0.016);
+  const yBase = H * (0.50 + (idx - 1.5) * 0.075);
+  const thick = H * (0.13 + idx * 0.045);
+  const speed = 0.42 + idx * 0.16;
+  const phase = idx * 2.1;
+
+  const top = [], bot = [];
+  for (let i = 0; i <= N; i++){
+    const p = i / N;
+    const x = -W * 0.12 + p * W * 1.24;
+    const y = yBase
+            + Math.sin(p * 6.2  + time * speed + phase) * amp
+            + Math.sin(p * 13.7 - time * speed * 0.62 + phase * 1.9) * amp * 0.3;
+    top.push([x, y]);
+    bot.push([x, y + thick * (0.55 + 0.45 * Math.sin(p * Math.PI))]);
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(top[0][0], top[0][1]);
+  for (let i = 1; i <= N; i++) ctx.lineTo(top[i][0], top[i][1]);
+  for (let i = N; i >= 0; i--) ctx.lineTo(bot[i][0], bot[i][1]);
+  ctx.closePath();
+
+  const h1 = hue + idx * 34;
+  const g  = ctx.createLinearGradient(0, yBase - amp * 1.6, 0, yBase + thick + amp * 1.6);
+  g.addColorStop(0.00, `hsla(${h1},        95%, 60%, 0)`);
+  g.addColorStop(0.28, `hsla(${h1},        95%, 62%, 0.20)`);
+  g.addColorStop(0.52, `hsla(${h1 + 45},   95%, 72%, 0.30)`);
+  g.addColorStop(0.78, `hsla(${h1 + 95},   95%, 60%, 0.16)`);
+  g.addColorStop(1.00, `hsla(${h1 + 130},  95%, 55%, 0)`);
+  ctx.fillStyle = g;
+  ctx.fill();
+}
+
+const startTime = performance.now();
+
+function drawBG(now){
+  const t    = now - startTime;
+  const time = t * 0.00016;
+  const hue  = (202 + t * 0.0055) % 360;
+
+  ctx.globalCompositeOperation = 'source-over';
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0.0, '#04070e');
+  bg.addColorStop(0.5, '#081426');
+  bg.addColorStop(1.0, '#02040a');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 3; i++) drawRibbon(time, i, hue);
+
+  const rg = ctx.createRadialGradient(W * 0.5, H * 0.5, 0, W * 0.5, H * 0.5, H * 0.72);
+  rg.addColorStop(0,   `hsla(${hue + 20}, 90%, 60%, 0.10)`);
+  rg.addColorStop(0.5, `hsla(${hue + 60}, 90%, 55%, 0.05)`);
+  rg.addColorStop(1,   'hsla(220, 90%, 50%, 0)');
+  ctx.fillStyle = rg;
+  ctx.fillRect(0, 0, W, H);
+
+  requestAnimationFrame(drawBG);
+}
+
+/* =========================================================
+   起動
+   ========================================================= */
+requestAnimationFrame(() => {
+  render();
+  updateHint();
+  requestAnimationFrame(drawBG);
+  runBootSequence();
+
+  if (document.fonts && document.fonts.ready){
+    document.fonts.ready.then(() => {
+      if (state.mode === 'submenu') positionSubmenu();
+    });
+  }
+});
+</script>
+</body>
+</html>
